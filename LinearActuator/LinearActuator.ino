@@ -21,7 +21,7 @@ void setup() {
 
   Serial.begin(9600);
 
-  rocs::init(0x11, "ptaArm", 6);
+  rocs::init(0x01, "ptaArm", 6);
   rocs::set_write_handler(write_handler);
 }
 
@@ -102,11 +102,11 @@ actuatorState int2Enum (int i) {
 void write_handler(uint8_t reg, uint8_t val) {
     actuatorState newState;
     switch (reg) {
-        case 0:
+        case 1:
           newState = int2Enum(val);
           setLowerState(newState);
         break;
-        case 1:
+        case 2:
           newState = int2Enum(val);
           setUpperState(newState);
         break;
