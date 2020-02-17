@@ -1,5 +1,4 @@
 #include <rocs.hpp>
-int numSteps;
 enum actuatorState {
   down,
   idle,
@@ -19,20 +18,11 @@ void setup() {
   digitalWrite(2,HIGH);
   attachInterrupt(digitalPinToInterrupt(2), magnet_detect, FALLING);
 
-  Serial.begin(9600);
-
-  rocs::init(0x01, "ptaArm", 6);
+  rocs::init(0x02, "ptaArm", 6);
   rocs::set_write_handler(write_handler);
 }
 
 void loop() {
-    uint8_t in;
-    if (Serial.available() > 0) {
-      in = Serial.read();
-      write_handler(0,in);
-      numSteps=0;
-    }
-    Serial.println(numSteps);
 }
 
 void setLowerState (actuatorState newState) {
@@ -111,8 +101,4 @@ void write_handler(uint8_t reg, uint8_t val) {
           setUpperState(newState);
         break;
     }
-}
-
-void magnet_detect() {
-  numSteps++;
 }
