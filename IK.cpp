@@ -1,5 +1,7 @@
 #include "IK.h"
 
+//Check rotation validity first
+
 double IK::getYPrime(double x, double y) {
 	return sqrt(x * x + y * y);
 }
@@ -58,12 +60,11 @@ void IK::chooseOption(double currentAngles[]) {
 				newAngles[1] = o1Angles[0];
 				newAngles[2] = o1Angles[1];
 			}
-			else {
-				if (o2Angles[0] >= j2Limits[0] && o2Angles[0] <= j2Limits[1] && o2Angles[1] >= j3Limits[0] && o2Angles[1] <= j3Limits[1]) {
-					newAngles[1] = o2Angles[0];
-					newAngles[2] = o2Angles[1];
-				}
-				else failure(currentAngles);
+			else if (o2Angles[0] >= j2Limits[0] && o2Angles[0] <= j2Limits[1] && o2Angles[1] >= j3Limits[0] && o2Angles[1] <= j3Limits[1]) {
+				newAngles[1] = o2Angles[0];
+				newAngles[2] = o2Angles[1];
+			}
+			else failure(currentAngles);
 			}
 		}
 
@@ -72,6 +73,7 @@ void IK::chooseOption(double currentAngles[]) {
 				newAngles[1] = o2Angles[0];
 				newAngles[2] = o2Angles[1];
 			}
+			else if ()
 			else failure(currentAngles);
 		}
 	}
@@ -90,6 +92,7 @@ void IK::doubleCheck() {
 }
 
 void IK::getAngles(double x, double y, double z, double currentAngles[]) {
+	//checkPossible();
 	newAngles[0] = atan2(y, x);
 
 	yPrime = getYPrime(x, y);
