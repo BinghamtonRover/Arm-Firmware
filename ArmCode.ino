@@ -7,7 +7,7 @@
  *  1 button to toggle gripper up/flat/down
  *  2 buttons to open and close gripper
  *  
- * Things to still add:
+ * Things to still add: 1, 3, 5, 7
  *  1. Step counting to ensure the motors aren't stalling and
  *  adjust speed based off that.
  *  2. Fine tune the sensorRead functions.
@@ -21,6 +21,7 @@
  *  speed controllers then change the calls of setDir accordingly
  *  7. openCloseFingers() needs a way to check if it's closed around
  *  an object, right now it just checks when the fingers touch
+ *  8. Add in Limit checking
 */
 
 #define J1Sensor 1 //Still have to figure out what pins are for what
@@ -29,6 +30,17 @@
 #define J4Sensor 4
 #define J5Sensor 5
 #define J6Sensor 6
+
+#define J1Lim1 19
+#define J1Lim2 20
+#define J2Lim1 21
+#define J2Lim2 22
+#define J3Lim1 23
+#define J3Lim2 24
+#define J4Lim1 25
+#define J4Lim2 26
+#define J6Lim1 27
+#define J6Lim2 28
 
 #define m1Step 7
 #define m1Dir 8
@@ -226,6 +238,25 @@ void setup() {
   pinMode(m5Dir, OUTPUT);
   pinMode(m6Step, OUTPUT);
   pinMode(m6Dir, OUTPUT);
+
+  pinMode(J1Sensor, INPUT);
+  pinMode(J1Sensor, INPUT);
+  pinMode(J1Sensor, INPUT);
+  pinMode(J1Sensor, INPUT);
+  pinMode(J1Sensor, INPUT);
+  pinMode(J1Sensor, INPUT);
+
+  pinMode(J1Lim1, INPUT_PULLUP);
+  pinMode(J1Lim2, INPUT_PULLUP);
+  pinMode(J2Lim1, INPUT_PULLUP);
+  pinMode(J2Lim2, INPUT_PULLUP);
+  pinMode(J3Lim1, INPUT_PULLUP);
+  pinMode(J3Lim2, INPUT_PULLUP);
+  pinMode(J4Lim1, INPUT_PULLUP);
+  pinMode(J4Lim2, INPUT_PULLUP);
+  pinMode(J6Lim1, INPUT_PULLUP);
+  pinMode(J6Lim2, INPUT_PULLUP);
+  
   
   currentAngles[0] = sensorReadJ1(analogRead(J1Sensor));
   currentAngles[1] = sensorReadJ2(analogRead(J2Sensor));
