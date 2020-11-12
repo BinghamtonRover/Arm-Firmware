@@ -2,7 +2,7 @@ void gripperLevel() {
   double level = -(sensorReadJ2(analogRead(J2Sensor)) + sensorReadJ3(analogRead(J3Sensor)));
   double gripperAngle = sensorReadJ4(analogRead(J4Sensor));
   switch(gripperLift) {
-    case left:
+    case left: //straight down
       while (abs(gripperAngle - (level - HALF_PI)) >= accuracy) {
         if (gripperAngle - (level - HALF_PI) >= accuracy) {
           setDir(4,0);
@@ -12,10 +12,11 @@ void gripperLevel() {
           setDir(4,1);
           step(4);
         }
+        delayMicroseconds(microsBetween);
       }
       gripperAngle = sensorReadJ4(analogRead(J4Sensor));
       break;
-    case right:
+    case right: //flat
       while (abs(gripperAngle - level) >= accuracy) {
         if (gripperAngle - level >= accuracy) {
           setDir(4,0);
@@ -26,9 +27,10 @@ void gripperLevel() {
           step(4);
         }
         gripperAngle = sensorReadJ4(analogRead(J4Sensor));
+        delayMicroseconds(microsBetween);
       }
       break;
-    default:
+    default: //straight up
       while (abs(gripperAngle - (level + HALF_PI)) >= accuracy) {
         if (gripperAngle - (level + HALF_PI) >= accuracy) {
           setDir(4,0);
@@ -39,6 +41,7 @@ void gripperLevel() {
           step(4);
         }
         gripperAngle = sensorReadJ4(analogRead(J4Sensor));
+        delayMicroseconds(microsBetween);
       }
       break;
   }
@@ -49,10 +52,12 @@ void gripperTwist() {
     case left:
       setDir(5,0);
       step(5);
+      delayMicroseconds(microsBetween);
       break;
     case right:
       setDir(5,1);
       step(5);
+      delayMicroseconds(microsBetween);
       break;
     default:
       break;
