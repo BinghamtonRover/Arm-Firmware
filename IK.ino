@@ -1,7 +1,4 @@
-//33-34
-
- 
- setCoordinates() {
+void setCoordinates() {
   switch(mainMovement) {
     case forward:
       nextX += movementResolution;
@@ -45,7 +42,7 @@ void runInverseKinematics() {
           setDir(1,1);
           step(1);
         }
-        else {
+        else  if(currentAngles[0] - nextAngles[0] < accuracy) {
           setDir(1,0);
           step(1);
         }
@@ -55,7 +52,7 @@ void runInverseKinematics() {
           setDir(2,1);
           step(2);
         }
-        else {
+        else  if(currentAngles[1] - nextAngles[0] < accuracy) {          
           setDir(2,0);
           step(2);
         }
@@ -65,7 +62,7 @@ void runInverseKinematics() {
           setDir(3,1);
           step(3);
         }
-        else {
+        else  if(currentAngles[2] - nextAngles[0] < accuracy) {
           setDir(3,0);
           step(3);
         }
