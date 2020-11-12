@@ -1,8 +1,7 @@
 #ifndef ik_h
 #define ik_h
 
-#include <cmath>
-#include <iostream>
+#include <math.h>
 
 /* Usage:
 	To be honest I'm not 100% sure how the integration with arduino works, but the getAngles function you put in your desired x,y,z
@@ -15,10 +14,7 @@
 	-   J1 is assumed to not have any limits (as of right now we don't know the limits of J1 because they come from the other
 		stuff on the rover) might even make the whole limiting more complicated because J1 limits will likely be dependent on
 		positions of J2 and J3.
-	-	atan2 will always return angles between -pi/2 and pi/2, but the joints have more freedom than that. We need to be able to
-		tell which quadrant the point we are trying to get to is in and do the transformation to get there or something like that
 	-   Probably bad structure IDK how to structure stuff with the class stuff.
-	-	Not super sure I'm returning the angles the right way, Idrk how the interfacing with arduino works
 */
 
 class IK
@@ -61,7 +57,6 @@ class IK
 		void getAngles(double x, double y, double z, double currentAngles[]);
 		void doubleCheck();
 		void endPointPos(double currentAngles[]);
-
 };
 
 #endif
