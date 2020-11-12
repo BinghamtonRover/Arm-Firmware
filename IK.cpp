@@ -50,7 +50,6 @@ void IK::failure(double currentAngles[]) {
 	newAngles[0] = currentAngles[0];
 	newAngles[1] = currentAngles[1];
 	newAngles[2] = currentAngles[2];
-	std::cout << "This position could not be reached\n";
 }
 
 void IK::chooseOption(double currentAngles[]) {
@@ -65,7 +64,6 @@ void IK::chooseOption(double currentAngles[]) {
 				newAngles[2] = o2Angles[1];
 			}
 			else failure(currentAngles);
-			}
 		}
 
 		else {
@@ -73,7 +71,6 @@ void IK::chooseOption(double currentAngles[]) {
 				newAngles[1] = o2Angles[0];
 				newAngles[2] = o2Angles[1];
 			}
-			else if ()
 			else failure(currentAngles);
 		}
 	}
@@ -92,7 +89,6 @@ void IK::doubleCheck() {
 }
 
 void IK::getAngles(double x, double y, double z, double currentAngles[]) {
-	//checkPossible();
 	newAngles[0] = atan2(y, x);
 
 	yPrime = getYPrime(x, y);
