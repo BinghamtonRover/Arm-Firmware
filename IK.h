@@ -20,13 +20,8 @@
 class IK
 {
 	double getYPrime(double x, double y);
-	double getIntersectionY1(double a, double b, double c, double d);
-	double getIntersectionY2(double a, double b, double c, double d);
-	double getIntersectionX1(double a, double b, double c, double d);
-	double getIntersectionX2(double a, double b, double c, double d);
-	double getAngle3(double y1, double z1, double y, double z);
-	void chooseOption(double currentAngles[]);
-	void failure(double currentAngles[]);
+	void failure();
+	void chooseOption();
 
 	//Things to set
 
@@ -36,27 +31,17 @@ class IK
 	double j2Limits[2] = { -2.61799, 1.8326 }; //Lower limit first 
 	double j3Limits[2] = { -2.35619, 2.44346 };//Upper limit second
 
-	public:
-		double newAngles[3];
+	private: 
 		double o1Angles[2];
 		double o2Angles[2];
-		double Z1;
-		double Z2;
-		double Y1;
-		double Y2;
-		double yPrime;
-		double finalX1;
-		double finalY1;
-		double finalZ1;
-		double finalX2;
-		double finalY2;
-		double finalZ2;
-		double endPointX;
-		double endPointY;
-		double endPointZ;
-		void getAngles(double x, double y, double z, double currentAngles[]);
+
+	public:
+		double x, y, z;
+		double oldX, oldY, oldZ;
+
+		void getAngles(double x, double y, double z);
 		void doubleCheck();
-		void endPointPos(double currentAngles[]);
+		void endPointPos();
 };
 
 #endif
