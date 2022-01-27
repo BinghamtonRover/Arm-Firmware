@@ -26,6 +26,7 @@
 
 class IK {
 	// Length of the arms in any units, so long as they're consistent. 
+	// TODO: Update these
 	static constexpr double a = 10;  // length of the "humerus", attached to the rover
 	static constexpr double b = 5;  // length of the "forearm", attached to the humerus
 
@@ -34,9 +35,10 @@ class IK {
 	 If the IK algorithm calculates an angle outside of these bounds, it will 
 	 return a failure.
 	*/ 
+	// TODO: Update these
 	static constexpr double bLimits[2] = { -100,  100};
 	static constexpr double cLimits[2] = { -2.61799, 1.8326 }; 
-	static constexpr double j3Limits[2] = { -2.35619, 2.44346 };
+	static constexpr double thetaLimits[2] = { -2.35619, 2.44346 };
 
 	/* Maximum error tolerance. 
 
@@ -45,16 +47,19 @@ class IK {
 	*/
 	static constexpr double tolerance = 0.1;
 
+	/* The value returned to indicate a failed computation. */
+	static constexpr std::tuple<double, double, double> failure = {-1, -1, -1};
+
 	public:
-		/* Calculates the current (x, y) position from angles B and C */
-		static std::tuple<double, double> calculatePosition(double B, double C);
+		/* Computes the current position of the end-effector (hand). */
+		static std::tuple<double, double, double> calculatePosition(double theta, double B, double C);
 
-		/* Calculates the desired angles B and C to arrive at (x, y).
+		/* Computes the angles theta, B, and C to move the gripper to (x, y, z).
 
-		 The function indicates failure by returning -1 for both values. If this 
+		 The function indicates failure by returning [failure]. If this 
 		 happens, it means it was impossible to move to the requested position.
 		*/
-		static std::tuple<double, double> calculateAngles(double x, double y);
+		static std::tuple<double, double, double> calculateAngles(double x, double y, double z);
 };
 
 #endif
