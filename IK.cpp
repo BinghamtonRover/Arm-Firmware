@@ -56,10 +56,3 @@ std::tuple<double, double> IK::calculateAngles(double x, double y) {
 
 	return {B, C};
 }
-
-int main() { 
-	auto [shoulder, elbow] = IK::calculateAngles(9.33, 6.16);
-	double shoulderDegrees = shoulder * 180/PI;
-	double elbowDegrees = elbow * 180/PI;
-	printf("Shoulder: %f, Elbow: %f", shoulderDegrees, elbowDegrees);
-}
