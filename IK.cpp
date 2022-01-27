@@ -81,11 +81,3 @@ std::tuple<double, double, double> IK::calculateAngles(double x, double y, doubl
 
 	return {theta, B, C};
 }
-
-int main() {
-	auto [theta, B, C] = IK::calculateAngles(5, 5, 3);
-	theta *= 180/PI;
-	B *= 180/PI;
-	C *= 180/PI;
-	printf("Swivel: %f, Shoulder: %f, Elbow: %f\n", theta, B, C);
-}
