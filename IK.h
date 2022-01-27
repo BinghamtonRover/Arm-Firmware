@@ -8,8 +8,8 @@
  The arm functions similarly to a human arm, with the "humerus" (a) attached to 
  the "body" (chassis) by the "shoulder" joint (measured by angle B). Similarly, 
  the "forearm" (b) is attached to the "humerus" by the "elbow" joint (measured
- by angle C). Be sure to check out the diagram titled `diagram.png` as well as
- try out the interactive demo at https://www.desmos.com/calculator/i8grld5pdu.
+ by angle C). Be sure to check out the diagram titled `ik.png` as well as try 
+ out the interactive demo at https://www.desmos.com/calculator/i8grld5pdu.
  Those two should and the analogy get you in the right mindset for this library.
  All code uses variable names corresponding to the diagram.
 

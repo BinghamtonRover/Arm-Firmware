@@ -11,7 +11,7 @@ std::tuple<double, double> IK::calculatePosition(double B, double C) {
 	 We can do this using basic vector math: Treat all the arms as vectors and 
 	 add them together to get the position of the end effector.
  */
-	
+
 	double absoluteC = B - PI + C;  // gets angle C relative to the X-axis
 	double x1 = a * cos(B);
 	double y1 = a * sin(B);
@@ -31,7 +31,7 @@ std::tuple<double, double> IK::calculateAngles(double x, double y) {
 	 or the computed angles are out-of-bounds for the rover (like [bLimits]).
 
 	 For more details, see:
-	 - the diagram labeled `diagram.png` in this repository
+	 - the diagram labeled `ik.png` in this repository
 	 - the interactive demo at https://www.desmos.com/calculator/i8grld5pdu
 	 - this paper from the inventors of the algorithm: 
 	   https://www.researchgate.net/publication/251743615_Triangulation_A_new_algorithm_for_Inverse_Kinematics
