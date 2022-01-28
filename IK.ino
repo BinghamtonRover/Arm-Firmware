@@ -1,3 +1,15 @@
+/* Computes and saves the angles required to move to the given position 
+
+ Since 3D is confusing, let's define our axes from the operator's perspective:
+ - The X-axis: left(-) and right(+)
+ - The Y-axis: backward(-) and forward(+)
+ - The Z-axis: down(-) and up(+)
+
+ This function sets [shoulderAngle], [elbowAngle], and [wristAngle] such
+ that the end effector -- the hand -- is at the given position. By sending 
+ coordinates to IK::calculateAngles, we can get the desired angles for anywhere.
+*/
+
 void setCoordinates() {
   switch(mainMovement) {
     case forward:

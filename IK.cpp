@@ -1,67 +1,83 @@
+#include <stdio.h>
+#include <tuple>
+
 #include "IK.h"
 
-//Check rotation validity first
+#define PI 3.141592653589793
 
-double IK::getYPrime(double x, double y) {
-	return sqrt(x * x + y * y);
+std::tuple<double, double, double> IK::calculatePosition(double theta, double B, double C) {
+	/* Computes the current position of the end-effector (hand).
+	
+	 We can do this using basic vector math: Treat all the arms as vectors and 
+	 add them together to get the position of the end effector.
+
+	 However, since we're working in the KZ plane, we need to translate k to x 
+	 and y. We can do this by using [theta] and trig in the XY plane. 
+ */
+
+	// First, get (k, z) by using vectors.
+	double absoluteC = B - PI + C;  // gets angle C relative to the X-axis
+	double k1 = a * cos(B);
+	double z1 = a * sin(B);
+	double k2 = b * cos(absoluteC);
+	double z2 = b * sin(absoluteC);
+	double z = z1 + z2;
+	double k = k1 + k2;
+
+	// Now we use k and theta to get x and y.
+	double y = k * sin(theta);
+	double x = k * cos(theta);
+	return {x, y, z};
 }
 
-void IK::failure() {
-	x = oldX;
-	y = oldY;
-	z = oldZ;
-}
+std::tuple<double, double, double> IK::calculateAngles(double x, double y, double z) {
+	/* Computes the angles theta, B, and C to move the gripper to (x, y, z).
 
-void IK::chooseOption() {
-	if (x >= j1Limits[0] && x <= j1Limits[1]) {
-		if (((fabs(y - o1Angles[0])) + (fabs(z - o1Angles[1]))) <= (((fabs(y - o2Angles[0])) + (fabs(z - o2Angles[1]))))) {
-			if (o1Angles[0] >= j2Limits[0] && o1Angles[0] <= j2Limits[1] && o1Angles[1] >= j3Limits[0] && o1Angles[1] <= j3Limits[1]) {
-				y = o1Angles[0];
-				z = o1Angles[1];
-			}
-			else if (o2Angles[0] >= j2Limits[0] && o2Angles[0] <= j2Limits[1] && o2Angles[1] >= j3Limits[0] && o2Angles[1] <= j3Limits[1]) {
-				y = o2Angles[0];
-				z = o2Angles[1];
-			}
-			else failure();
-		}
+	 This function uses the Triangulation algorithm. Essentially, we use the Law 
+	 of Cosines combined with the lengths of the arms to compute the angles of the
+	 joints, working backwards from the (x, y) destination. 
 
-		else {
-			if (o2Angles[0] >= j2Limits[0] && o2Angles[0] <= j2Limits[1] && o2Angles[1] >= j3Limits[0] && o2Angles[1] <= j3Limits[1]) {
-				y = o2Angles[0];
-				z = o2Angles[1];
-			}
-			else failure();
-		}
-	}
-	else failure();
-}
+	 Except, we want to work in 3 dimensions, not 2. It's actually pretty simple: 
+	 - take a top-down view of the arm (ie, the XY plane)
+	 - find the direction (theta) and distance (k) to the target from this view
+	 - switch back to a profile view (XZ or YZ plane)
+	 - rotate along the Z-axis to make K the horizontal axis (now the KZ plane)
+	 - solve for (k, z) using normal triangulation in this new 2D space. 
 
-void IK::doubleCheck() {
-	// TODO: These values aren't used!
-	double finalZ1 = sin(o1Angles[0]) * L2 + sin(o1Angles[1]) * L3;
-	double finalZ2 = sin(o2Angles[0]) * L2 + sin(o2Angles[1]) * L3;
+	 Returns [failure] (angles of -1) if the math doesn't check out ([tolerance]),
+	 or the computed angles are out-of-bounds for the rover (like [bLimits]).
 
-	double finalY1 = sin(x) * (cos(o1Angles[0]) * L2 + cos(o1Angles[1]) * L3);
-	double finalY2 = sin(x) * (cos(o2Angles[0]) * L2 + cos(o2Angles[1]) * L3);
+	 For more details, see:
+	 - the README of this repository
+	 - the interactive demo at https://www.desmos.com/calculator/i8grld5pdu
+	 - this paper from the inventors of the algorithm: 
+	   https://www.researchgate.net/publication/251743615_Triangulation_A_new_algorithm_for_Inverse_Kinematics
+	*/
 
-	double finalX1 = cos(x) * (cos(o1Angles[0]) * L2 + cos(o1Angles[1]) * L3);
-	double finalX2 = cos(x) * (cos(o2Angles[0]) * L2 + cos(o2Angles[1]) * L3);
-}
+	// Compute the angle and magnitude on the XY plane
+	double theta = atan2(y, x);
+	double k = sqrt(x*x + y*y);
 
-void IK::getAngles(double newX, double newY, double newZ) {
-	oldX = x;
-	oldY = y;
-	oldZ = z;
-	x = atan2(newY, newX);
+	// Now we can triangulate with k as our horizontal axis and Z as our vertical.
+	// Use the law of cosines to determine the two angles.
+	double c = sqrt(k*k + z*z);
+	double C  = acos( (a*a + b*b - c*c) / (2*a*b) );
+	double B1 = acos( (a*a - b*b + c*c) / (2*a*c) );
+	double B2 = atan2(z, k);
+	double B  = B1 + B2;
 
-	chooseOption();
-	doubleCheck();
-}
+	// Double-check the logic by solving for the supposed position.
+	auto [computedX, computedY, computedZ] = calculatePosition(theta, B, C);
+	double deltaX = abs(computedX - x);
+	double deltaY = abs(computedY - y);
+	double deltaZ = abs(computedZ - z);
+	if (deltaX > tolerance || deltaY > tolerance || deltaZ > tolerance) 
+		return failure;
 
-void IK::endPointPos() {
-	// TODO: These values aren't used!
-	double endPointZ = sin(y) * L2 + sin(z) * L3;
-	double endPointY = sin(x) * (cos(y) * L2 + cos(z) * L3);
-	double endPointX = cos(x) * (cos(y) * L2 + cos(z) * L3);
+	// Check for forbidden angles
+	if (theta < thetaLimits[0] || theta > thetaLimits[1]) return failure;
+	else if (B < bLimits[0] || B > bLimits[1]) return failure;
+	else if (C < cLimits[0] || C > cLimits[1]) return failure;
+
+	return {theta, B, C};
 }
