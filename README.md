@@ -6,7 +6,7 @@ Arm Inverse Kinematics.
 The code here controls the arm, based on input from an Xbox controller. The arm
 can swivel clockwise and counter-clockwise, lift up and down, and extend in and out. The gripper can be separately lifted up and down, rotated clockwise and counter-clockwise and pinch open and closed. The following image should illustrate that.
 
-![The possible degrees of freedom in the arm](controls.png)
+![The possible degrees of freedom in the arm](diagrams/controls.png)
 
 ### The controls
 
@@ -38,15 +38,15 @@ Here is where IK, or **Inverse Kinematics**, comes in. Moving along the X-axis i
 
 Thing is, we want to compute the position in 3 dimensions, but triangulation only works in 2.
 
-![The arm in 3 dimensions](diagrams\3D-space.png)
+![The arm in 3 dimensions](diagrams/3D-space.png)
 
 But we can take one dimension at a time. Let’s take a top-down view at the XY plane;
 
-![A top-down view of the arm, in the XY plane](diagrams\top-down.png) 
+![A top-down view of the arm, in the XY plane](diagrams/top-down.png) 
 
 Now, we look back at a profile view, where k is the horizontal (the KZ plane): 
 
-![The process of using triangulation to find the optimal angles](diagrams\triangulation.png)
+![The process of using triangulation to find the optimal angles](diagrams/triangulation.png)
 
 ## The code
 
