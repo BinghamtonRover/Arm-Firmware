@@ -12,18 +12,18 @@ can swivel clockwise and counter-clockwise, lift up and down, and extend in and 
 
 ```  
 ARM CONTROLS:
-- arm swivel				L (horizontal)
-- arm lift      		L (vertical)
-- precise swivel		D-pad (horizontal)
-- precise lift      D-pad (vertical)
-- arm extend        Bumpers
+- arm swivel:				L (horizontal)
+- arm lift:      		L (vertical)
+- arm extend:       Bumpers
+- precise swivel:		D-pad (horizontal)
+- precise lift:     D-pad (vertical)
+- precise extend:		Y/A
 
 GRIPPER CONTROLS:
 - gripper open:     Triggers
 - gripper rotate:   R (horizontal)
 - gripper lift:     R (vertical)
-- precise rotate:   X/B
-- precise lift:     Y/A
+- precise open:  	  X/B
 
 MISC:
 - calibrate:        START
