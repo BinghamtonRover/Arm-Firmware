@@ -8,7 +8,7 @@ double clamp(double x, double upper, double lower) {
 int Motor::radToSteps(double angle) { return angle; }
 
 Motor::Motor(int chipSelectPin, int enablePin, int current, const double _limits[2]) : 
-	driver{newDriver(10, 23, 1700, 51200*60, 51200*8)} 
+	driver{newDriver(chipSelectPin, enablePin, current, 51200*60, 51200*8)} 
 {
 	// The arrays are two different types: const double* and double[2]. 
 	// So we use this workaround to copy the data instead.
