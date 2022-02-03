@@ -4,40 +4,56 @@
 
 /* The angles of the joints of the arm. 
 
- [armSwivelAngle] controls the rotation of the arm, [armExtendAngle] controls
- the base joint, and [armLiftAngle] controls the middle joint of the arm.
+ [swivelAngle] controls the rotation of the arm, [extendAngle] controls
+ the base joint, and [liftAngle] controls the middle joint of the arm.
 
  These angles can be either manually controlled or automatically calculated 
  from the IK algorithm by passing in the desired coordinates of the gripper. 
  See [gripperX], [gripperY], and [gripperZ] and [IK::calculateAngles] for more.
 */
-double armSwivelAngle = 0, armExtendAngle = 0, armLiftAngle = 0;
+double swivelAngle = 0, extendAngle = 0, liftAngle = 0;
 
 /* The (x, y, z) coordinates of the gripper. 
 
  These coordinates are passed to the IK algorithms which return angles for the 
- joints of the arm, [armSwivelAngle], [armExtendAngle], and [armLiftAngle]. 
+ joints of the arm, [swivelAngle], [extendAngle], and [liftAngle]. 
 */ 
 double gripperX = 0, gripperY = 0, gripperZ = 0;
 
-Motor armSwivelMotor = Motor(BurtArmConstants::swivelLimits);
-Motor armExtendMotor = Motor(BurtArmConstants::extendLimits);
-Motor armLiftMotor = Motor(BurtArmConstants::liftLimits);
+Motor swivel = Motor(10, 23, 2200, BurtArmConstants::swivelLimits);
+Motor extend = Motor(10, 23, 2200, BurtArmConstants::extendLimits);
+Motor lift = Motor(10, 23, 2200, BurtArmConstants::liftLimits);
+
+double nextStallCheck = millis() + BurtArmConstants::stallCheckInterval;
 
 void setup() { }
 
-void loop() { }
+void loop() {
+	while (!swivel.isFinished() || !extend.isFinished() || !lift.isFinished()) {
+		double currentTime = millis();
+		if (currentTime >= nextStallCheck) {
+			nextStallCheck = currentTime + BurtArmConstants::stallCheckInterval;
+			if (swivel.didStall()) swivel.calibrate();
+			if (extend.didStall()) extend.calibrate();
+			if (lift.didStall()) lift.calibrate();
+		}
+	}
+}
 
 void updatePosition(double newX, double newY, double newZ) {
 	/* Updates the (x, y, z) coordinates of the gripper, provided it is safe. */
 	Angles newAngles = BurtArmIK::calculateAngles(newX, newY, newZ);
-	armSwivelMotor.safeUpdate(newAngles.theta);
-	armExtendMotor.safeUpdate(newAngles.B);
-	armLiftMotor.safeUpdate(newAngles.C);
+	swivel.safeUpdate(newAngles.theta);
+	extend.safeUpdate(newAngles.B);
+	lift.safeUpdate(newAngles.C);
 	gripperX = newX; gripperY = newY; gripperZ = newZ;
 }
 
-void calibrate() { }
+void calibrate() {
+	swivel.calibrate();
+	extend.calibrate();
+	lift.calibrate();
+}
 
 void parseCommand(int command, double arg) {
 	switch (command) {
@@ -51,13 +67,13 @@ void parseCommand(int command, double arg) {
 			updatePosition(gripperX, gripperY + BurtArmConstants::movementSpeed * arg, gripperZ); 
 			break;
 		case 4:  // precise swivel. arg is direction, -1 or 1
-			armSwivelMotor.safeUpdate(armSwivelAngle + (BurtArmConstants::angleIncrement * arg));
+			swivel.safeUpdate(swivelAngle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 5:  // precise lift. arg is direction, -1 or 1
-			armLiftMotor.safeUpdate(armLiftAngle + (BurtArmConstants::angleIncrement * arg));
+			lift.safeUpdate(liftAngle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 6:  // precise extend. arg is direction, -1 or 1
-			armExtendMotor.safeUpdate(armExtendAngle + (BurtArmConstants::angleIncrement * arg));
+			extend.safeUpdate(extendAngle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 11:  // calibrate. No arg
 			calibrate();

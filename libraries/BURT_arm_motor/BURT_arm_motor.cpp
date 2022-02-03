@@ -4,14 +4,22 @@ double clamp(double x, double upper, double lower) {
 	return min(upper, max(x, lower));
 }
 
-Motor::Motor(const double _limits[2]) {
-	// TODO: initialize motor
+// TODO: 
+int Motor::radToSteps(double angle) { return angle; }
+
+Motor::Motor(int chipSelectPin, int enablePin, int current, const double _limits[2]) : 
+	driver{newDriver(10, 23, 1700, 51200*60, 51200*8)} 
+{
+	// The arrays are two different types: const double* and double[2]. 
+	// So we use this workaround to copy the data instead.
 	limits[0] = _limits[0]; limits[1] = _limits[1];
-	// limits = _limits;
-	// this.driver = newDriver(10, 23, 1700, 51200*60, 51200*8);
 }
 
-bool Motor::didStall() { return false; /* return driver.status_sg(); */ }
+bool Motor::didStall() { return driver.status_sg(); }
+
+bool Motor::isFinished() { return driver.XTARGET() == driver.XACTUAL(); }
+
+// TODO:
 void Motor::calibrate() { Serial.println("Hm, try now"); }
 
 void Motor::safeUpdate(double newAngle) {
@@ -24,5 +32,6 @@ void Motor::safeUpdate(double newAngle) {
 	double lowerBound = max(limits[0], angle - BurtArmConstants::maxDelta);
 	double upperBound = min(limits[1], angle + BurtArmConstants::maxDelta);
 	angle = clamp(newAngle, lowerBound, upperBound);
+	driver.XTARGET(radToSteps(angle));
 }
 

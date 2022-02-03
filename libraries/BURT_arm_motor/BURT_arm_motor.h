@@ -6,15 +6,20 @@
 
 class Motor { 
 	public: 
+		static int radToSteps(double angle);
+
 		/* Creates an instance of a motor. 
 
 		 Pass in the motor's limits (in radians) here. The [updateAngle] method
 		 will be sure to never pass these angles.
 	 */
-		Motor(const double _limits[2]);
+		Motor(int chipSelectPin, int enablePin, int current, const double _limits[2]);
 
 		/* Returns true if the motor stalled recently. */
 		bool didStall();
+
+		/* Returns true if the motor has reached its target. */
+		bool isFinished();
 
 		/* Calibrates the motor to a known angle. */
 		void calibrate();
@@ -23,7 +28,7 @@ class Motor {
 		void safeUpdate(double newAngle);
 
 	private: 
-		// TMC5160Stepper driver = NULL;
+		TMC5160Stepper driver;
 		double angle = 0;
 		double limits[2] = {-1, -1};
 };
