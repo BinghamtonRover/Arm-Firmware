@@ -24,19 +24,13 @@ Motor swivel = Motor(10, 23, 2200, BurtArmConstants::swivelLimits);
 Motor extend = Motor(10, 23, 2200, BurtArmConstants::extendLimits);
 Motor lift = Motor(10, 23, 2200, BurtArmConstants::liftLimits);
 
-double nextStallCheck = millis() + BurtArmConstants::stallCheckInterval;
-
 void setup() { }
 
 void loop() {
 	while (!swivel.isFinished() || !extend.isFinished() || !lift.isFinished()) {
-		double currentTime = millis();
-		if (currentTime >= nextStallCheck) {
-			nextStallCheck = currentTime + BurtArmConstants::stallCheckInterval;
-			if (swivel.didStall()) swivel.calibrate();
-			if (extend.didStall()) extend.calibrate();
-			if (lift.didStall()) lift.calibrate();
-		}
+		swivel.fixPotentialStall();
+		extend.fixPotentialStall();
+		lift.fixPotentialStall();
 	}
 }
 

@@ -23,19 +23,13 @@ Motor pinch = Motor(10, 23, 1300, BurtArmConstants::pinchLimits);
 Motor lift = Motor(10, 23, 2200, BurtArmConstants::gripperLiftLimits);
 Motor rotate = Motor(10, 23, 1300, BurtArmConstants::gripperRotateLimits);
 
-double nextStallCheck = millis() + BurtArmConstants::stallCheckInterval;
-
 void setup() { }
 
 void loop() {
   while (!pinch.isFinished() || !rotate.isFinished() || !lift.isFinished()) {
-    double currentTime = millis();
-    if (currentTime >= nextStallCheck) {
-      nextStallCheck = currentTime + BurtArmConstants::stallCheckInterval;
-      if (pinch.didStall()) pinch.calibrate();
-      if (rotate.didStall()) rotate.calibrate();
-      if (lift.didStall()) lift.calibrate();
-    }
+    pinch.fixPotentialStall();
+    rotate.fixPotentialStall();
+    lift.fixPotentialStall();
   }
 }
 

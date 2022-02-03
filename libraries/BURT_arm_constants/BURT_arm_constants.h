@@ -31,9 +31,6 @@ class BurtArmConstants {
 		/* The maximum difference in joint positions between "frames". */
 		static constexpr double maxDelta = 1;
 
-		/* How often, in milliseconds, to check whether the motors have stalled. */
-		static constexpr double stallCheckInterval = 100;
-
 		/* The intervals (in radians) between which the joints can rotate. 
 
 		 For some reason, defining them here results in a linking error in the IDE, 

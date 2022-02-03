@@ -13,6 +13,7 @@ Motor::Motor(int chipSelectPin, int enablePin, int current, const double _limits
 	// The arrays are two different types: const double* and double[2]. 
 	// So we use this workaround to copy the data instead.
 	limits[0] = _limits[0]; limits[1] = _limits[1];
+	nextStallCheck = millis() + STALL_CHECK_INTERVAL;
 }
 
 bool Motor::didStall() { return driver.status_sg(); }
@@ -33,5 +34,12 @@ void Motor::safeUpdate(double newAngle) {
 	double upperBound = min(limits[1], angle + BurtArmConstants::maxDelta);
 	angle = clamp(newAngle, lowerBound, upperBound);
 	driver.XTARGET(radToSteps(angle));
+}
+
+void Motor::fixPotentialStall() {
+	double currentTime = millis();
+	if (currentTime < nextStallCheck) return;
+	nextStallCheck = currentTime + STALL_CHECK_INTERVAL;
+	if (didStall()) calibrate();
 }
 
