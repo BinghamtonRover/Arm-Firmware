@@ -1,8 +1,6 @@
-#include <IK.h>
-#include <Motor.h>
-#include <BURT_Constants.h>
-
-#define Motor
+#include <BURT_arm_constants.h>
+#include <BURT_arm_IK.h>
+#include <BURT_arm_motor.h>
 
 /* The angles of the joints of the arm. 
 
@@ -22,60 +20,44 @@ double armSwivelAngle = 0, armExtendAngle = 0, armLiftAngle = 0;
 */ 
 double gripperX = 0, gripperY = 0, gripperZ = 0;
 
-Motor armSwivelMotor, armExtendMotor, armLiftMotor;
-TMC5160Stepper armSwivelMotor = newDriver(cs_pin, )
+Motor armSwivelMotor = Motor(BurtArmConstants::swivelLimits);
+Motor armExtendMotor = Motor(BurtArmConstants::extendLimits);
+Motor armLiftMotor = Motor(BurtArmConstants::liftLimits);
 
-// 2200mA for the arms + gripper lift
-// 1300mA for the gripper rotate + pinch
+void setup() { }
 
-void setup() {
-	// initialize motors
-	armSwivelMotor.init();
-	armExtendMotor.init();
-	armLiftMotor.init();
-}
-
-void loop() {
-	// write the current angles to each motor
-	armSwivelMotor.write(armSwivelAngle);
-	armExtendMotor.write(armExtendAngle);
-	armLiftMotor.write(armLiftAngle);
-}
+void loop() { }
 
 void updatePosition(double newX, double newY, double newZ) {
 	/* Updates the (x, y, z) coordinates of the gripper, provided it is safe. */
-	Angles newAngles = IK::calculateAngles(newX, newY, newZ);
-	bool success = armSwivelMotor.updateAngle(newAngles.theta)
-		&& armExtendMotor.updateAngle(newAngles.B)
-		&& armLiftMotor.updateAngle(newAngles.C);
-
-	// Safe to assign new position and angles
-	if (success) {
-		gripperX = newX; gripperY = newY; gripperZ = newZ;
-	}
+	Angles newAngles = BurtArmIK::calculateAngles(newX, newY, newZ);
+	armSwivelMotor.safeUpdate(newAngles.theta);
+	armExtendMotor.safeUpdate(newAngles.B);
+	armLiftMotor.safeUpdate(newAngles.C);
+	gripperX = newX; gripperY = newY; gripperZ = newZ;
 }
 
-void calibrate();
+void calibrate() { }
 
 void parseCommand(int command, double arg) {
 	switch (command) {
 		case 1:  // swivel arm. arg is extent, between -1 and 1
-			updatePosition(gripperX + BurtConstants::movementSpeed * arg, gripperY, gripperZ);
+			updatePosition(gripperX + BurtArmConstants::movementSpeed * arg, gripperY, gripperZ);
 			break;
 		case 2:  // lift arm. arg is extent, between -1 and 1
-			updatePosition(gripperX, gripperY, gripperZ + BurtConstants::movementSpeed * arg);
+			updatePosition(gripperX, gripperY, gripperZ + BurtArmConstants::movementSpeed * arg);
 			break;
 		case 3:  // extend arm. arg is extent, between -1 and 1
-			updatePosition(gripperX, gripperY + BurtConstants::movementSpeed * arg, gripperZ); 
+			updatePosition(gripperX, gripperY + BurtArmConstants::movementSpeed * arg, gripperZ); 
 			break;
 		case 4:  // precise swivel. arg is direction, -1 or 1
-			armSwivelMotor.updateAngle(armSwivelAngle + (BurtConstants::angleIncrement * arg));
+			armSwivelMotor.safeUpdate(armSwivelAngle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 5:  // precise lift. arg is direction, -1 or 1
-			armLiftMotor.updateAngle(armLiftAngle + (BurtConstants::angleIncrement * arg));
+			armLiftMotor.safeUpdate(armLiftAngle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 6:  // precise extend. arg is direction, -1 or 1
-			armExtendMotor.updateAngle(armExtendAngle + (BurtConstants::angleIncrement * arg));
+			armExtendMotor.safeUpdate(armExtendAngle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 11:  // calibrate. No arg
 			calibrate();
