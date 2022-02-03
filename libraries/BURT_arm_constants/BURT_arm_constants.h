@@ -26,19 +26,22 @@ class BurtArmConstants {
 		 
 		 Multiply by a factor between -1 and 1 to obtain a new speed and direction.
 		*/
-		// static constexpr double rotationSpeed = 1;
+		static constexpr double rotationSpeed = 1;
 
 		/* The maximum difference in joint positions between "frames". */
 		static constexpr double maxDelta = 1;
 
-	public:
-		/* The intervals (in radians) between which the joints can rotate. */
-		static constexpr double extendLimits[2] = { -100,  100};
-		static constexpr double liftLimits[2] = { -2.61799, 1.8326 }; 
-		static constexpr double swivelLimits[2] = { -2.35619, 2.44346 };
-		// static constexpr double pinchLimits[2] = {0, 1};
-		// static constexpr double gripperLiftLimits[2] = {-PI, PI};
-		// static constexpr double gripperRotateLimits[2] = {0, 2 * PI};
+		/* The intervals (in radians) between which the joints can rotate. 
+
+		 For some reason, defining them here results in a linking error in the IDE, 
+		 so we define them in the .cpp file instead.
+		*/
+		static double extendLimits[2];
+		static double liftLimits[2];
+		static double swivelLimits[2];
+		static double pinchLimits[2];
+		static double gripperLiftLimits[2];
+		static double gripperRotateLimits[2];
 };
 
 #endif
