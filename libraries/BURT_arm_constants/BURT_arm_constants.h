@@ -1,6 +1,10 @@
 #ifndef burt_arm_constants
 #define burt_arm_constants
 
+#ifndef PI
+#define PI 3.141592653589793
+#endif
+
 class BurtArmConstants {
 	public: 
 		/* The speed at which the arm will move in (x, y, z) space. 
@@ -22,18 +26,19 @@ class BurtArmConstants {
 		 
 		 Multiply by a factor between -1 and 1 to obtain a new speed and direction.
 		*/
-		static constexpr double rotationSpeed = 1;
+		// static constexpr double rotationSpeed = 1;
 
 		/* The maximum difference in joint positions between "frames". */
 		static constexpr double maxDelta = 1;
 
+	public:
 		/* The intervals (in radians) between which the joints can rotate. */
 		static constexpr double extendLimits[2] = { -100,  100};
 		static constexpr double liftLimits[2] = { -2.61799, 1.8326 }; 
 		static constexpr double swivelLimits[2] = { -2.35619, 2.44346 };
-		static constexpr double pinchLimits[2] = {0, 1};
-		static constexpr double gripperLiftLimits[2] = {-PI, PI};
-		static constexpr double gripperRotateLimits[2] = {0, 2 * PI};
+		// static constexpr double pinchLimits[2] = {0, 1};
+		// static constexpr double gripperLiftLimits[2] = {-PI, PI};
+		// static constexpr double gripperRotateLimits[2] = {0, 2 * PI};
 };
 
 #endif

@@ -1,6 +1,10 @@
 #ifndef burt_arm_ik_h
 #define burt_arm_ik_h
 
+#ifndef PI
+#define PI 3.141592653589793
+#endif
+
 #include <math.h>
 
 struct Angles { double theta, B, C; };
