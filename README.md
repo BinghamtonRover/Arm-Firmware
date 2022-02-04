@@ -73,3 +73,7 @@ There are a few safety measures in place:
 - `IK::calculateAngles` checks its results against `IK::bLimits` and `IK::cLimits` which dictate how far the joints can physically move due to hardware limitations. If the result comes out to be more than that, the operation fails and the arm doesn’t move
 - The Arduino scripts only move the gripper by a small distance per second
 - The Arduino scripts check the result of `IK::calculateAngles` against the current angles. If the difference comes out to be too much to move in a short time, the operation fails and the arm doesn’t move. 
+
+## The Motors
+
+We're using TMC5160 stepper motors to control the arm, which means we need to use their libraries. You can download the library at [their repository](https://github.com/teemuatlut/TMCStepper/tree/Release_v1) (make sure you're on the `Release_v1` branch) and the documentation [here](https://teemuatlut.github.io/TMCStepper/class_t_m_c5160_stepper.html). For more details on our usage, see the `TMC_utils` library. 
