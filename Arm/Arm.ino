@@ -11,12 +11,11 @@
  from the IK algorithm by passing in the desired coordinates of the gripper. 
  See [gripperX], [gripperY], and [gripperZ] and [IK::calculateAngles] for more.
 */
-double swivelAngle = 0, extendAngle = 0, liftAngle = 0;
 
 /* The (x, y, z) coordinates of the gripper. 
 
  These coordinates are passed to the IK algorithms which return angles for the 
- joints of the arm, [swivelAngle], [extendAngle], and [liftAngle]. 
+ joints of the arm, [swivel], [extend], and [lift]. 
 */ 
 double gripperX = 0, gripperY = 0, gripperZ = 0;
 
@@ -61,13 +60,13 @@ void parseCommand(int command, double arg) {
 			updatePosition(gripperX, gripperY + BurtArmConstants::movementSpeed * arg, gripperZ); 
 			break;
 		case 4:  // precise swivel. arg is direction, -1 or 1
-			swivel.safeUpdate(swivelAngle + (BurtArmConstants::angleIncrement * arg));
+			swivel.safeUpdate(swivel.angle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 5:  // precise lift. arg is direction, -1 or 1
-			lift.safeUpdate(liftAngle + (BurtArmConstants::angleIncrement * arg));
+			lift.safeUpdate(lift.angle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 6:  // precise extend. arg is direction, -1 or 1
-			extend.safeUpdate(extendAngle + (BurtArmConstants::angleIncrement * arg));
+			extend.safeUpdate(extend.angle + (BurtArmConstants::angleIncrement * arg));
 			break;
 		case 11:  // calibrate. No arg
 			calibrate();
