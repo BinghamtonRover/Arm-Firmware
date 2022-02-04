@@ -30,11 +30,13 @@ class Motor {
 		/* Periodically checks if the motor has stalled and calibrates if needed. */
 		void fixPotentialStall();
 
+		/* The current angle the motor is trying to reach. */
+		double angle = 0;
+
 	private: 
 		TMC5160Stepper driver;
 		double nextStallCheck;
-		double angle = 0;
-		double limits[2] = {-1, -1};
+		double limits[2];
 
 		/* Returns true if the motor stalled recently. */
 		bool didStall();
