@@ -6,8 +6,23 @@ Arm Inverse Kinematics.
 The code here controls the arm, based on input from an Xbox controller. The arm
 can swivel clockwise and counter-clockwise, lift up and down, and extend in and out. The gripper can be separately lifted up and down, rotated clockwise and counter-clockwise and pinch open and closed. The following image should illustrate that.
 
-![The possible degrees of freedom in the arm](controls.png)
+![The possible degrees of freedom in the arm](diagrams/controls.png)
 
+## Setup
+
+There are two sketches in this repository: `Arm/Arm.ino` and `Gripper/Gripper.ino` for the arm and gripper boards, respectively. The sketches share a lot of common code, which is refactored away into libraries. Those libraries follow the naming conventions of `BURT_arm_X`, where `X` is the functionality offered by the library. 
+
+To compile the sketches, the Arduino IDE needs to know where those libraries are. Unfortunately, to avoid compiling the arm and gripper sketches together, we can't simply place them in the same folder. But the only other path Arduino recognizes is the user's sketchbook directory. (You can find the path to your sketchbook by going to preferences. The libraries are located in `<sketchbook>/libraries`.) There are two options to get the sketches to compile: 
+
+1. **Preferred** Create a hard link to the libraries in this repository. Each platform has a different way of doing this, but on Windows you can run the following command in the command prompt set to this repository:
+
+```batch
+for /d %i in (libraries\*) do (mklink /J %userprofile%\documents\arduino\%i %i)
+```
+
+2. **Workaround** Manually copy the directories in `/libraries` into your sketchbook. This would mean that changes to the libraries won't synchronize with the sketchbook and you'd need to re-copy the files every time. The hard link method avoids this by linking the libraries. 
+
+## Code Details
 ### The controls
 
 ```  
@@ -38,15 +53,15 @@ Here is where IK, or **Inverse Kinematics**, comes in. Moving along the X-axis i
 
 Thing is, we want to compute the position in 3 dimensions, but triangulation only works in 2.
 
-![The arm in 3 dimensions](diagrams\3D-space.png)
+![The arm in 3 dimensions](diagrams/3D-space.png)
 
 But we can take one dimension at a time. Let’s take a top-down view at the XY plane;
 
-![A top-down view of the arm, in the XY plane](diagrams\top-down.png) 
+![A top-down view of the arm, in the XY plane](diagrams/top-down.png) 
 
 Now, we look back at a profile view, where k is the horizontal (the KZ plane): 
 
-![The process of using triangulation to find the optimal angles](diagrams\triangulation.png)
+![The process of using triangulation to find the optimal angles](diagrams/triangulation.png)
 
 ## The code
 
