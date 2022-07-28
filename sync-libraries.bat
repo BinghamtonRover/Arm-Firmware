@@ -25,7 +25,7 @@ if NOT exist !sketchbook! (
 rem Sync all libraries to the sketchbook
 echo.
 for /d %%i in (libraries\*) do (
-	echo Synching library: %%i
+	echo Syncing library: %%i
 	if NOT exist !sketchbook!\%%i (mklink /J !sketchbook!\%%i %%i)
 )
 echo Done^^!

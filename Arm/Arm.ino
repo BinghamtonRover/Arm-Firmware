@@ -4,11 +4,8 @@
 #include <BURT_can.h>
 
 /* TODO: 
- - logic to fix gripperX when safeUpdate rejects the position
- - implement calibrate function
- - transmit temperature sensors
  - handle gyroscope inputs
- - backlash (idk man)
+ - handle recoil
 */
 
 // Pinouts
