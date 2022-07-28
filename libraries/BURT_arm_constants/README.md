@@ -1,4 +1,4 @@
-# Stepper Motor
+# Arm Constants
 
 ## The Arm
 

@@ -38,9 +38,9 @@
 #define HIGH_CURRENT 2200
 
 
-Motor rotate = Motor(ROTATE_CS_PIN, ROTATE_EN_PIN, LOW_CURRENT, ROTATE_MIN, ROTATE_MAX, 99.51);
-Motor pinch = Motor(PINCH_CS_PIN, PINCH_EN_PIN, LOW_CURRENT, PINCH_MIN, PINCH_MAX, 199.02);
-Motor lift = Motor(LIFT_CS_PIN, LIFT_EN_PIN, HIGH_CURRENT, LIFT_MIN, LIFT_MAX, 29.16);
+StepperMotor rotate = StepperMotor(ROTATE_CS_PIN, ROTATE_EN_PIN, LOW_CURRENT, ROTATE_MIN, ROTATE_MAX, 99.51);
+StepperMotor pinch = StepperMotor(PINCH_CS_PIN, PINCH_EN_PIN, LOW_CURRENT, PINCH_MIN, PINCH_MAX, 199.02);
+StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, HIGH_CURRENT, LIFT_MIN, LIFT_MAX, 29.16);
 
 void setup() { 
 	Serial.begin(9600);
@@ -83,22 +83,22 @@ void calibrate() {
 
 void pinchHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	pinch.safeUpdate(pinch.angle + (BurtArmConstants::rotationSpeed * arg));
+	pinch.moveTo(pinch.angle + (ArmConstants::rotationSpeed * arg));
 }
 
 void rotateHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	rotate.safeUpdate(rotate.angle + (BurtArmConstants::rotationSpeed * arg));
+	rotate.moveTo(rotate.angle + (ArmConstants::rotationSpeed * arg));
 }
 
 void liftHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	lift.safeUpdate(lift.angle + (BurtArmConstants::rotationSpeed * arg));
+	lift.moveTo(lift.angle + (ArmConstants::rotationSpeed * arg));
 }
 
 void precisePinchHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	pinch.safeUpdate(pinch.angle + (BurtArmConstants::angleIncrement * arg));
+	pinch.moveTo(pinch.angle + (ArmConstants::angleIncrement * arg));
 }
 
 void calibrateHandler(const CanMessage& message) {
@@ -126,10 +126,10 @@ void parseSerialCommand(String input) {
 		return;
 	}
 
-	if (command == "pinch") pinch.safeUpdate(pinch.angle + arg);
-	else if (command == "rotate") rotate.safeUpdate(rotate.angle + arg);
+	if (command == "pinch") pinch.moveTo(pinch.angle + arg);
+	else if (command == "rotate") rotate.moveTo(rotate.angle + arg);
 	else if (command == "precise-pinch") {
-		pinch.safeUpdate(pinch.angle + (BurtArmConstants::angleIncrement * arg));
+		pinch.moveTo(pinch.angle + (ArmConstants::angleIncrement * arg));
 	} else {
 		Serial.println("Unknown command: " + command);
 	}

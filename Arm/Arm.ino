@@ -55,9 +55,9 @@
 */ 
 double gripperX = 0, gripperY = 0, gripperZ = 0;
 
-Motor swivel = Motor(SWIVEL_CS_PIN, SWIVEL_EN_PIN, MOTOR_CURRENT, SWIVEL_MIN, SWIVEL_MAX, SWIVEL_GEARBOX);
-Motor extend = Motor(EXTEND_CS_PIN, EXTEND_EN_PIN, MOTOR_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND_GEARBOX);
-Motor lift = Motor(LIFT_CS_PIN, LIFT_EN_PIN, MOTOR_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_GEARBOX);
+StepperMotor swivel = StepperMotor(SWIVEL_CS_PIN, SWIVEL_EN_PIN, MOTOR_CURRENT, SWIVEL_MIN, SWIVEL_MAX, SWIVEL_GEARBOX);
+StepperMotor extend = StepperMotor(EXTEND_CS_PIN, EXTEND_EN_PIN, MOTOR_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND_GEARBOX);
+StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, MOTOR_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_GEARBOX);
 
 void setup() {
 	pinMode(SWIVEL_CS_PIN, OUTPUT);
@@ -108,16 +108,17 @@ void updatePosition(double newX, double newY, double newZ) {
 	Serial.print(newY);
 	Serial.print(" ");	
 	Serial.println(newZ);
-	Angles newAngles = ArmIK::calculateAngles(newX, newY, newZ);
+	Coordinates newCoordinates(newX, newY, newZ);
+	Angles newAngles = ArmIK::calculateAngles(newCoordinates);
 	Serial.print("IK finished: ");
 	Serial.print(newAngles.theta);
 	Serial.print(", ");
 	Serial.print(newAngles.B);
 	Serial.print(", ");	
 	Serial.println(newAngles.C);	
-	swivel.writeAngle(newAngles.theta);
-	extend.writeAngle(newAngles.B);
-	lift.writeAngle(newAngles.C);
+	swivel.moveTo(newAngles.theta);
+	extend.moveTo(newAngles.B);
+	lift.moveTo(newAngles.C);
 	gripperX = newX; gripperY = newY; gripperZ = newZ;
 }
 
@@ -139,35 +140,35 @@ void calibrate() {
 
 void swivelHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	gripperX += BurtArmConstants::movementSpeed * arg;
+	gripperX += ArmConstants::movementSpeed * arg;
 	updatePosition(gripperX, gripperY, gripperZ);
 }
 
 void extendHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	gripperY += BurtArmConstants::movementSpeed * arg;
+	gripperY += ArmConstants::movementSpeed * arg;
 	updatePosition(gripperX, gripperY, gripperZ);
 }
 
 void liftHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	gripperZ += BurtArmConstants::movementSpeed * arg;
+	gripperZ += ArmConstants::movementSpeed * arg;
 	updatePosition(gripperX, gripperY, gripperZ);
 }
 
 void preciseSwivelHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	swivel.moveRadians(BurtArmConstants::angleIncrement * arg);
+	swivel.moveBy(ArmConstants::angleIncrement * arg);
 }
 
 void preciseLiftHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	lift.moveRadians(BurtArmConstants::angleIncrement * arg);
+	lift.moveBy(ArmConstants::angleIncrement * arg);
 }
 
 void preciseExtendHandler(const CanMessage& message) {
 	float arg = (float) message.buf[0] - 1;
-	extend.moveRadians(BurtArmConstants::angleIncrement * arg);
+	extend.moveBy(ArmConstants::angleIncrement * arg);
 }
 
 void calibrateHandler(const CanMessage& message) {
@@ -200,18 +201,16 @@ void parseSerialCommand(String input) {
 	float arg = input.substring(delimiter + 1).toFloat();
 
 	if (command == "swivel") {
-		gripperX += BurtArmConstants::movementSpeed * arg;
+		gripperX += ArmConstants::movementSpeed * arg;
 		updatePosition(gripperX, gripperY, gripperZ);
 	} else if (command == "extend") {
-		gripperY += BurtArmConstants::movementSpeed * arg;
+		gripperY += ArmConstants::movementSpeed * arg;
 		updatePosition(gripperX, gripperY, gripperZ);
 	} else if (command == "lift") {
-		gripperZ += BurtArmConstants::movementSpeed * arg;
+		gripperZ += ArmConstants::movementSpeed * arg;
 		updatePosition(gripperX, gripperY, gripperZ);
-	} else if (command == "precise-swivel") swivel.moveRadians(arg);
-	// else if (command == "precise-lift") lift.moveRadians(arg);
-	else if (command == "precise-lift") lift.moveSteps(arg);
-	else if (command == "precise-extend") extend.moveRadians(arg);
+	} else if (command == "precise-swivel") swivel.moveBy(arg);
+	else if (command == "precise-lift") lift.moveBy(arg);
+	else if (command == "precise-extend") extend.moveBy(arg);
 	else Serial.println("Unrecognized command");
-
 }

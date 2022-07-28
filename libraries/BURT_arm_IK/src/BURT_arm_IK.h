@@ -7,26 +7,31 @@
 #ifndef burt_arm_ik_h
 #define burt_arm_ik_h
 
-#ifndef PI
-/// The constant PI, to 15 decimal places. 
-/// 
-/// Fun fact, this is as precise as even NASA gets. See 
-/// https://www.jpl.nasa.gov/edu/news/2016/3/16/how-many-decimals-of-pi-do-we-really-need/
-#define PI 3.141592653589793
-#endif
-
 #include <math.h>  // needed for trig functions
+#include <BURT_arm_constants.h>
 
 /// Defines the angles of the arm. 
 /// 
-/// Refer to the diagram in the README for a better picture, but in words:
-/// - `theta` is the rotation of the base (swivel)
-/// - `B` is the angle between the base and the humerus (ie, the shoulder joint)
-/// - `C` is the angle between the humerus and the forearm (ie, the elbow joint)
-struct Angles { double theta, B, C; };
+/// Refer to the diagram in the README for a better view. 
+struct Angles { 
+	/// The rotation of the base (swivel)
+	double theta;
+
+	/// The angle between the base and the humerus (ie, the shoulder joint)
+	double B;
+
+	/// The angle between the humerus and the forearm (ie, the elbow joint)
+	double C;
+
+	Angles(double theta, double B, double C) : theta(theta), B(B), C(C) { }
+};
 
 /// Represents a position in 3D space. 
-struct Coordinates { double x, y, z; };
+struct Coordinates { 
+	double x, y, z; 
+
+	Coordinates(double x, double y, double z) : x(x), y(y), z(z) { }
+};
 
 /// A helper class to handle inverse kinematics calculations for the robot arm. 
 /// 
@@ -71,13 +76,13 @@ class ArmIK {
 	/// this amount, it will return #failure, which means the math is wrong somewhere.
 	static constexpr double tolerance = 0.1;
 
-	/// The value returned to indicate a failed computation.
-	/// 
-	/// After every call to #calculateAngles, check if the result is equal to this value.
-	/// If it is, ignore the result and warn the operator. 
-	static constexpr Angles failure = {0, 0, 0};
-
 	public:
+		/// The value returned to indicate a failed computation.
+		/// 
+		/// After every call to #calculateAngles, check if the result is equal to this value.
+		/// If it is, ignore the result and warn the operator. 
+		static Angles failure;
+
 		/// Computes the current position of the end-effector (hand).
 		/// 
 		/// Alternatively, think of this function as returning the position of the imaginary 

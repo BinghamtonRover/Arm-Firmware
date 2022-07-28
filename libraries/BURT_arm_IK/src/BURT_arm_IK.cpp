@@ -8,28 +8,29 @@
 
 #include "BURT_arm_IK.h"
 
+Angles ArmIK::failure = Angles(0, 0, 0);
+
 /// Computes the current position of the end-effector (hand).
 /// 
 /// We can do this using basic vector math: Treat all the arms as vectors and add them together 
 /// to get the position of the end effector. However, since we're working in the KZ plane, we 
 /// need to translate k to x and y. We can do this by using [theta] and trig in the XY plane. 
-Coordinates ArmIK::calculatePosition(double theta, double B, double C) {
+Coordinates ArmIK::calculatePosition(Angles angles) {
 	// First, get (k, z) by using vectors.
-	double absoluteC = B - PI + C;  // gets angle C relative to the X-axis
-	double k1 = a * cos(B);
-	double z1 = a * sin(B);
+	double absoluteC = angles.B - PI + angles.C;  // gets angle C relative to the X-axis
+	double k1 = a * cos(angles.B);
+	double z1 = a * sin(angles.B);
 	double k2 = b * cos(absoluteC);
 	double z2 = b * sin(absoluteC);
 	double z = z1 + z2;
 	double k = k1 + k2;
 
 	// Now we use k and theta to get x and y.
-	double y = k * sin(theta);
-	double x = k * cos(theta);
+	double y = k * sin(angles.theta);
+	double x = k * cos(angles.theta);
 
 	// Pack and return the values.
-	Coordinates result;
-	result.x = x; result.y = y; result.z = z;
+	Coordinates result(x, y, z);
 	return result; 
 }
 
@@ -49,8 +50,9 @@ Coordinates ArmIK::calculatePosition(double theta, double B, double C) {
 /// Be sure to thoroughly read the README for an intuitive understanding of the process.
 /// 
 /// Returns #failure if the math doesn't check out (see #tolerance).
-Angles ArmIK::calculateAngles(double x, double y, double z) {
+Angles ArmIK::calculateAngles(Coordinates coordinates) {
 	// Compute the angle and magnitude on the XY plane
+	double x = coordinates.x, y = coordinates.y, z = coordinates.z;
 	double theta = atan2(y, x);
 	double k = sqrt(x*x + y*y);
 
@@ -63,16 +65,16 @@ Angles ArmIK::calculateAngles(double x, double y, double z) {
 	double B  = B1 + B2;
 
 	// Double-check the logic by solving for the supposed position.
-	Coordinates position = calculatePosition(theta, B, C);
+	Angles angles(theta, B, C);
+	Coordinates position = calculatePosition(angles);
 	double deltaX = fabs(position.x - x);
 	double deltaY = fabs(position.y - y);
 	double deltaZ = fabs(position.z - z);
 	if (deltaX > tolerance || deltaY > tolerance || deltaZ > tolerance) 
-		return failure;
+		return ArmIK::failure;
 
 	// Pack and return the values.
-	Angles result;
-	result.theta = theta; result.B = B; result.C = C; 
+	Angles result(theta, B, C);
 	return result;
 }
 

@@ -91,12 +91,12 @@ void StepperMotor::fixPotentialStall() {
 
 /// Bounds the angle automatically.
 /// 
-/// The lower and upper bounds are already determined by #limits. Additionally, we have to account
-/// for BurtArmConstants::maxDelta. To do so, we respect the bounds set by #limits, but are more
-/// conservative when exceeding #maxDelta.
+/// The lower and upper bounds are already determined by #minLimit and #maxLimit. Additionally, we 
+/// have to account for ArmConstants::maxDelta. To do so, we respect the bounds set by #minLimit 
+/// and #maxLimit, but are more conservative when exceeding ArmConstants::maxDelta.
 void StepperMotor::moveTo(float newAngle) {
-	double lowerBound = max(0, angle - BurtArmConstants::maxDelta);
-	double upperBound = min(limit, angle + BurtArmConstants::maxDelta);
+	double lowerBound = max(minLimit, angle - ArmConstants::maxDelta);
+	double upperBound = min(maxLimit, angle + ArmConstants::maxDelta);
 	angle = constrain(newAngle, lowerBound, upperBound);
 	Serial.print("Current angle: ");
 	Serial.println(angle);
