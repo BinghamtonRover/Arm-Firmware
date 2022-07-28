@@ -1,16 +1,55 @@
 #include <BURT_arm_constants.h>
 #include <BURT_arm_IK.h>
 #include <BURT_arm_motor.h>
+#include <BURT_can.h>
 
-/* The angles of the joints of the arm. 
-
- [swivelAngle] controls the rotation of the arm, [extendAngle] controls
- the base joint, and [liftAngle] controls the middle joint of the arm.
-
- These angles can be either manually controlled or automatically calculated 
- from the IK algorithm by passing in the desired coordinates of the gripper. 
- See [gripperX], [gripperY], and [gripperZ] and [IK::calculateAngles] for more.
+/* TODO: 
+ - logic to fix gripperX when safeUpdate rejects the position
+ - implement calibrate function
+ - transmit temperature sensors
+ - handle gyroscope inputs
+ - backlash (idk man)
 */
+
+// Pinouts
+#define SWIVEL_EN_PIN 35
+#define SWIVEL_CS_PIN 10
+
+#define EXTEND_EN_PIN 40 // 34
+#define EXTEND_CS_PIN 36 // 37
+
+#define LIFT_EN_PIN 34 // 40
+#define LIFT_CS_PIN 37 // 36
+
+// Limits for the joints, in terms of radians from their limit switches
+#define SWIVEL_MIN -2 * PI  // INFINITY // can swivel in endless circles
+#define SWIVEL_MAX 2 * PI
+#define SWIVEL_GEARBOX 46.656
+
+#define EXTEND_MIN 2.00 // -0.698
+#define EXTEND_MAX 2.18
+#define EXTEND_GEARBOX -331.816  
+
+#define LIFT_MIN 0.698
+#define LIFT_MAX 2.443
+#define LIFT_GEARBOX 216
+
+// When the joints are at their maximum angles, these are the coordinates of the gripper.
+#define CALIBRATED_X 0
+#define CALIBRATED_Y 366.420
+#define CALIBRATED_Z 1117.336
+
+// CanBus IDs
+#define CAN_SWIVEL_ID 0
+#define CAN_EXTEND_ID 0
+#define CAN_LIFT_ID 0
+#define CAN_PRECISE_SWIVEL_ID 0
+#define CAN_PRECISE_EXTEND_ID 0
+#define CAN_PRECISE_LIFT_ID 0
+#define CAN_CALIBRATE_ID 0
+
+// Misc
+#define MOTOR_CURRENT 3000  // current ratings for stepper motors
 
 /* The (x, y, z) coordinates of the gripper. 
 
@@ -19,26 +58,69 @@
 */ 
 double gripperX = 0, gripperY = 0, gripperZ = 0;
 
-Motor swivel = Motor(10, 23, 2200, BurtArmConstants::swivelLimits);
-Motor extend = Motor(10, 23, 2200, BurtArmConstants::extendLimits);
-Motor lift = Motor(10, 23, 2200, BurtArmConstants::liftLimits);
+Motor swivel = Motor(SWIVEL_CS_PIN, SWIVEL_EN_PIN, MOTOR_CURRENT, SWIVEL_MIN, SWIVEL_MAX, SWIVEL_GEARBOX);
+Motor extend = Motor(EXTEND_CS_PIN, EXTEND_EN_PIN, MOTOR_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND_GEARBOX);
+Motor lift = Motor(LIFT_CS_PIN, LIFT_EN_PIN, MOTOR_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_GEARBOX);
 
-void setup() { }
+void setup() {
+	pinMode(SWIVEL_CS_PIN, OUTPUT);
+	pinMode(EXTEND_CS_PIN, OUTPUT);
+	pinMode(LIFT_CS_PIN, OUTPUT);
+	digitalWrite(SWIVEL_CS_PIN, HIGH);
+	digitalWrite(EXTEND_CS_PIN, HIGH);
+	digitalWrite(LIFT_CS_PIN, HIGH);
+
+	swivel.setup();
+	// extend.setup();
+	lift.setup();
+	Serial.begin(9600);
+	calibrate();
+	Serial.println("Finished stepper motor initialization.");
+
+	// BurtCan::setup();
+	// BurtCan::registerHandler(CAN_SWIVEL_ID, swivelHandler);
+	// BurtCan::registerHandler(CAN_EXTEND_ID, extendHandler);
+	// BurtCan::registerHandler(CAN_LIFT_ID, liftHandler);
+	// BurtCan::registerHandler(CAN_PRECISE_SWIVEL_ID, preciseSwivelHandler);
+	// BurtCan::registerHandler(CAN_PRECISE_EXTEND_ID, preciseExtendHandler);
+	// BurtCan::registerHandler(CAN_PRECISE_LIFT_ID, preciseLiftHandler);
+	// Serial.println("Finished CAN bus initialization.");
+	Serial.println("Skipped CAN bus initialization.");
+}
 
 void loop() {
-	while (!swivel.isFinished() || !extend.isFinished() || !lift.isFinished()) {
-		swivel.fixPotentialStall();
-		extend.fixPotentialStall();
-		lift.fixPotentialStall();
-	}
+	// while (!swivel.isFinished() || !extend.isFinished() || !lift.isFinished()) {
+	// 	swivel.fixPotentialStall();
+	// 	extend.fixPotentialStall();
+	// 	lift.fixPotentialStall();
+	// }
+	// BurtCan::update();
+	// delay(1000);
+
+	// Temporary Serial Monitor interface for testing
+	String input = Serial.readString();
+	parseSerialCommand(input);
+	delay(500);
 }
 
 void updatePosition(double newX, double newY, double newZ) {
 	/* Updates the (x, y, z) coordinates of the gripper, provided it is safe. */
-	Angles newAngles = BurtArmIK::calculateAngles(newX, newY, newZ);
-	swivel.safeUpdate(newAngles.theta);
-	extend.safeUpdate(newAngles.B);
-	lift.safeUpdate(newAngles.C);
+	Serial.print("Trying to go to:  ");
+	Serial.print(newX);
+	Serial.print(" ");	
+	Serial.print(newY);
+	Serial.print(" ");	
+	Serial.println(newZ);
+	Angles newAngles = ArmIK::calculateAngles(newX, newY, newZ);
+	Serial.print("IK finished: ");
+	Serial.print(newAngles.theta);
+	Serial.print(", ");
+	Serial.print(newAngles.B);
+	Serial.print(", ");	
+	Serial.println(newAngles.C);	
+	swivel.writeAngle(newAngles.theta);
+	extend.writeAngle(newAngles.B);
+	lift.writeAngle(newAngles.C);
 	gripperX = newX; gripperY = newY; gripperZ = newZ;
 }
 
@@ -46,30 +128,93 @@ void calibrate() {
 	swivel.calibrate();
 	extend.calibrate();
 	lift.calibrate();
+	gripperX = CALIBRATED_X;
+	gripperY = CALIBRATED_Y;
+	gripperZ = CALIBRATED_Z;
 }
 
-void parseCommand(int command, double arg) {
-	switch (command) {
-		case 1:  // swivel arm. arg is extent, between -1 and 1
-			updatePosition(gripperX + BurtArmConstants::movementSpeed * arg, gripperY, gripperZ);
-			break;
-		case 2:  // lift arm. arg is extent, between -1 and 1
-			updatePosition(gripperX, gripperY, gripperZ + BurtArmConstants::movementSpeed * arg);
-			break;
-		case 3:  // extend arm. arg is extent, between -1 and 1
-			updatePosition(gripperX, gripperY + BurtArmConstants::movementSpeed * arg, gripperZ); 
-			break;
-		case 4:  // precise swivel. arg is direction, -1 or 1
-			swivel.safeUpdate(swivel.angle + (BurtArmConstants::angleIncrement * arg));
-			break;
-		case 5:  // precise lift. arg is direction, -1 or 1
-			lift.safeUpdate(lift.angle + (BurtArmConstants::angleIncrement * arg));
-			break;
-		case 6:  // precise extend. arg is direction, -1 or 1
-			extend.safeUpdate(extend.angle + (BurtArmConstants::angleIncrement * arg));
-			break;
-		case 11:  // calibrate. No arg
-			calibrate();
-			break;
+/* Handler functions for the controller inputs. 
+ 
+ Many messages will send an argument from -1 to 1. However, [CanMessage]s can
+ only send unsigned integers. Because of this, we need to convert to float and
+ subtract 1, since the message will be from [0, 2].
+*/
+
+void swivelHandler(const CanMessage& message) {
+	float arg = (float) message.buf[0] - 1;
+	gripperX += BurtArmConstants::movementSpeed * arg;
+	updatePosition(gripperX, gripperY, gripperZ);
+}
+
+void extendHandler(const CanMessage& message) {
+	float arg = (float) message.buf[0] - 1;
+	gripperY += BurtArmConstants::movementSpeed * arg;
+	updatePosition(gripperX, gripperY, gripperZ);
+}
+
+void liftHandler(const CanMessage& message) {
+	float arg = (float) message.buf[0] - 1;
+	gripperZ += BurtArmConstants::movementSpeed * arg;
+	updatePosition(gripperX, gripperY, gripperZ);
+}
+
+void preciseSwivelHandler(const CanMessage& message) {
+	float arg = (float) message.buf[0] - 1;
+	swivel.moveRadians(BurtArmConstants::angleIncrement * arg);
+}
+
+void preciseLiftHandler(const CanMessage& message) {
+	float arg = (float) message.buf[0] - 1;
+	lift.moveRadians(BurtArmConstants::angleIncrement * arg);
+}
+
+void preciseExtendHandler(const CanMessage& message) {
+	float arg = (float) message.buf[0] - 1;
+	extend.moveRadians(BurtArmConstants::angleIncrement * arg);
+}
+
+void calibrateHandler(const CanMessage& message) {
+	calibrate();
+}
+
+void parseSerialCommand(String input) {
+	Serial.println("User inputted: " + input);
+	if (input == "calibrate") calibrate();
+
+	int delimiter = input.indexOf(" ");
+	if (delimiter == -1) return;
+	int delimiter2 = input.indexOf(" ", delimiter + 1);
+	if (delimiter2 != -1) {  // was given an x, y, z command
+		float x = input.substring(0, delimiter).toFloat();
+		float y = input.substring(delimiter + 1, delimiter2).toFloat();
+		float z = input.substring(delimiter2).toFloat();
+		Serial.print("Moving to: (");
+			Serial.print(x); Serial.print(", ");
+			Serial.print(y); Serial.print(", ");
+			Serial.print(z); 
+		Serial.println(").");
+		gripperX += x;
+		gripperY += y;
+		gripperZ += z;
+		updatePosition(gripperX, gripperY, gripperZ);
+		return;
 	}
+	String command = input.substring(0, delimiter);
+	float arg = input.substring(delimiter + 1).toFloat();
+
+	if (command == "swivel") {
+		gripperX += BurtArmConstants::movementSpeed * arg;
+		updatePosition(gripperX, gripperY, gripperZ);
+	} else if (command == "extend") {
+		gripperY += BurtArmConstants::movementSpeed * arg;
+		updatePosition(gripperX, gripperY, gripperZ);
+	} else if (command == "lift") {
+		gripperZ += BurtArmConstants::movementSpeed * arg;
+		updatePosition(gripperX, gripperY, gripperZ);
+	} else if (command == "precise-swivel") swivel.moveRadians(arg);
+	// else if (command == "precise-lift") lift.moveRadians(arg);
+	else if (command == "precise-lift") lift.moveSteps(arg);
+	else if (command == "precise-extend") extend.moveRadians(arg);
+	else Serial.println("Unrecognized command");
+
 }
