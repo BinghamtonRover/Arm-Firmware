@@ -1,3 +1,8 @@
+/*! @file 
+ * \addtogroup Constants 
+ * \{
+*/
+
 #ifndef burt_arm_constants
 #define burt_arm_constants
 
@@ -29,7 +34,7 @@ class BurtArmConstants {
 		static constexpr double rotationSpeed = 1;
 
 		/* The maximum difference in joint positions between "frames". */
-		static constexpr double maxDelta = 1;
+		static constexpr double maxDelta = 10000;
 
 		/* The intervals (in radians) between which the joints can rotate. 
 
@@ -45,3 +50,6 @@ class BurtArmConstants {
 };
 
 #endif
+
+// The following close bracket marks the file for Doxygen
+/*! \} */
