@@ -1,0 +1,15 @@
+# Data types (KEYWORD1)
+Angles	KEYWORD1
+Coordinates	KEYWORD1
+ArmIK	KEYWORD1
+DCMotor	KEYWORD1
+Auger	KEYWORD1
+
+# Methods and functions (KEYWORD2)
+calculatePosition	KEYWORD2
+calculateAngles	KEYWORD2
+
+# Constants (LITERAL1)
+PI	LITERAL1
+failure		LITERAL1
+tolerance	LITERAL1

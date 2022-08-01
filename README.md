@@ -27,12 +27,12 @@ for /d %i in (libraries\*) do (mklink /J %userprofile%\documents\arduino\%i %i)
 
 ```  
 ARM CONTROLS:
-- arm swivel:				L (horizontal)
+- arm swivel:       L (horizontal)
 - arm lift:      		L (vertical)
 - arm extend:       Bumpers
-- precise swivel:		D-pad (horizontal)
+- precise swivel:	  D-pad (horizontal)
 - precise lift:     D-pad (vertical)
-- precise extend:		Y/A
+- precise extend:   Y/A
 
 GRIPPER CONTROLS:
 - gripper open:     Triggers
@@ -46,22 +46,6 @@ MISC:
 ```
 
 This way, you can easily rotate and lift the arm (resulting in X and Y movement) at the same time by using the left joystick, or do the same for the gripper by using the right joystick. Using a “precise” control will move minimally to allow for precision movement along one axis at a time.
-
-## The IK paradigm
-
-Here is where IK, or **Inverse Kinematics**, comes in. Moving along the X-axis is done by swiveling, which rotates the arm in a circle. But when moving the arm along the Y- or Z-axis (lifting or extending), it would be convenient to move the joints in unison to keep the gripper level. We use [triangulation](https://www.researchgate.net/publication/251743615_Triangulation_A_new_algorithm_for_Inverse_Kinematics) to calculate the respective angles for both joints in order to move the arm to a specific point. Below is a diagram describing the process. The names for the sides and angles are used throughout the code. Also see the [interactive demo](https://www.desmos.com/calculator/i8grld5pdu).
-
-Thing is, we want to compute the position in 3 dimensions, but triangulation only works in 2.
-
-![The arm in 3 dimensions](diagrams/3D-space.png)
-
-But we can take one dimension at a time. Let’s take a top-down view at the XY plane;
-
-![A top-down view of the arm, in the XY plane](diagrams/top-down.png) 
-
-Now, we look back at a profile view, where k is the horizontal (the KZ plane): 
-
-![The process of using triangulation to find the optimal angles](diagrams/triangulation.png)
 
 ## The code
 
