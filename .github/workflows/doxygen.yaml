@@ -29,7 +29,8 @@ jobs:
 
       - name: Run Doxygen
         uses: mattnotmitt/doxygen-action@1.9.4
-        doxyfile-path: libraries/Doxyfile
+        with: 
+          doxyfile-path: libraries/Doxyfile
 
       - name: Commit and push files
         run: |
