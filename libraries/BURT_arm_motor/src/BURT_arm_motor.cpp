@@ -23,6 +23,7 @@ void StepperMotor::setup() {
 	// -->
 	pinMode(enablePin, OUTPUT);
 	pinMode(chipSelectPin, OUTPUT);
+	pinMode(limitSwitchPin,INPUT_PULLUP);
 	digitalWrite(chipSelectPin, HIGH);
 	digitalWrite(enablePin, LOW);
 	// <--
@@ -117,7 +118,7 @@ void StepperMotor::debugMoveSteps(int steps) {
 }
 
 bool StepperMotor::readLimitSwitch() {
-	return digitalRead(limitSwitchPin)==HIGH;
+	return digitalRead(limitSwitchPin)==LOW;
 }
 
 // The following close bracket marks the file for Doxygen

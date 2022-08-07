@@ -165,7 +165,7 @@ class StepperMotor {
 
 		/// Checks if the limit switch is activated.
 		///
-		/// Assumes HIGH is active.
+		/// Assumes LOW is active since it is declared an INPUT_PULLUP in setup.
 		bool readLimitSwitch();
 };
 
