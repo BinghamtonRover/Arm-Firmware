@@ -46,6 +46,11 @@ class StepperMotor {
 		/// Enables the motor. This doesn't seem to be used outside of #setup, not even by TMC. 
 		byte enablePin;
 
+		/// The limit switch pin.
+		/// 
+		/// Used to evaluate whether the motor has trigged the limit switch. Used for calibration.
+		byte limitSwitchPin;
+
 		/// The Root Mean Square current to feed the motor. 
 		/// 
 		/// This value is passed to TMC in #setup.
@@ -99,9 +104,10 @@ class StepperMotor {
 		float angle;
 
 		/// Manage a stepper motor with the given pins.
-		StepperMotor(byte chipSelectPin, byte enablePin, int current, float minLimit, float maxLimit, float gearboxRatio) : 
+		StepperMotor(byte chipSelectPin, byte enablePin, byte limitSwitchPin, int current, float minLimit, float maxLimit, float gearboxRatio) : 
 			chipSelectPin(chipSelectPin),
 			enablePin(enablePin),
+			limitSwitchPin(limitSwitchPin),
 			current(current),
 			minLimit(minLimit),
 			maxLimit(maxLimit),
@@ -123,8 +129,6 @@ class StepperMotor {
 		/// 
 		/// Moves backwards until it hits its limit switch, then stops and overrides its internal
 		/// state (including #angle) to a known value.
-		/// 
-		/// NOTE: This function does not currently move. For now, it just resets the state.
 		void calibrate();  // calibrates the motor
 
 		/// Whether the motor has reached its destination.
@@ -158,6 +162,11 @@ class StepperMotor {
 		/// Use in debugging only. In production code, use #moveBy. This method can help determine
 		/// when the conversion factor (#radToSteps) is off, or the motor is misbehaving.
 		void debugMoveSteps(int steps);
+
+		/// Checks if the limit switch is activated.
+		///
+		/// Assumes LOW is active since it is declared an INPUT_PULLUP in setup.
+		bool readLimitSwitch();
 };
 
 #endif

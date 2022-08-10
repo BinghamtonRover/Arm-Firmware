@@ -23,6 +23,7 @@ void StepperMotor::setup() {
 	// -->
 	pinMode(enablePin, OUTPUT);
 	pinMode(chipSelectPin, OUTPUT);
+	pinMode(limitSwitchPin,INPUT_PULLUP);
 	digitalWrite(chipSelectPin, HIGH);
 	digitalWrite(enablePin, LOW);
 	// <--
@@ -68,12 +69,11 @@ void StepperMotor::setup() {
 	nextStallCheck = millis() + STALL_CHECK_INTERVAL;
 }
 
-// TODO: Make this calibrate. 
-// See https://github.com/BinghamtonRover/arm-firmware/issues/7
 void StepperMotor::calibrate() { 
-	driver.XACTUAL(radToSteps(maxLimit));
-	angle = maxLimit;
-	Serial.println("Hm, try now");
+	while(!readLimitSwitch()) moveBy(-PI/180);
+	driver.XACTUAL(radToSteps(minLimit));
+	angle = minLimit;
+	Serial.println("StepperMotor calibrated.");
 }
 
 bool StepperMotor::isFinished() { return driver.XTARGET() == driver.XACTUAL(); }
@@ -116,6 +116,10 @@ void StepperMotor::moveBy(float radians) {
 
 void StepperMotor::debugMoveSteps(int steps) {
 	driver.XTARGET(steps);
+}
+
+bool StepperMotor::readLimitSwitch() {
+	return digitalRead(limitSwitchPin)==LOW;
 }
 
 // The following close bracket marks the file for Doxygen

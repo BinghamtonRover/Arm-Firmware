@@ -11,12 +11,15 @@
 // Pinouts
 #define SWIVEL_EN_PIN 35
 #define SWIVEL_CS_PIN 10
+#define SWIVEL_LS_PIN 7
 
 #define EXTEND_EN_PIN 40 // 34
 #define EXTEND_CS_PIN 36 // 37
+#define EXTEND_LS_PIN 8
 
 #define LIFT_EN_PIN 34 // 40
 #define LIFT_CS_PIN 37 // 36
+#define LIFT_LS_PIN 9
 
 // Limits for the joints, in terms of radians from their limit switches
 #define SWIVEL_MIN -2 * PI  // INFINITY // can swivel in endless circles
@@ -55,9 +58,9 @@
 */ 
 double gripperX = 0, gripperY = 0, gripperZ = 0;
 
-StepperMotor swivel = StepperMotor(SWIVEL_CS_PIN, SWIVEL_EN_PIN, MOTOR_CURRENT, SWIVEL_MIN, SWIVEL_MAX, SWIVEL_GEARBOX);
-StepperMotor extend = StepperMotor(EXTEND_CS_PIN, EXTEND_EN_PIN, MOTOR_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND_GEARBOX);
-StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, MOTOR_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_GEARBOX);
+StepperMotor swivel = StepperMotor(SWIVEL_CS_PIN, SWIVEL_EN_PIN, SWIVEL_LS_PIN, MOTOR_CURRENT, SWIVEL_MIN, SWIVEL_MAX, SWIVEL_GEARBOX);
+StepperMotor extend = StepperMotor(EXTEND_CS_PIN, EXTEND_EN_PIN, EXTEND_LS_PIN, MOTOR_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND_GEARBOX);
+StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, LIFT_LS_PIN, MOTOR_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_GEARBOX);
 
 void setup() {
 	pinMode(SWIVEL_CS_PIN, OUTPUT);
