@@ -5,12 +5,17 @@
 // Pinouts
 #define ROTATE_EN_PIN 35
 #define ROTATE_CS_PIN 10
+#define ROTATE_LS_PIN 7
+
 
 #define LIFT_EN_PIN 34
 #define LIFT_CS_PIN 37
+#define LIFT_LS_PIN 8
+
 
 #define PINCH_EN_PIN 40
 #define PINCH_CS_PIN 36
+#define PINCH_LS_PIN 9
 
 #define ROTATE_MIN -2 * PI
 #define ROTATE_MAX 2 * PI
@@ -38,9 +43,9 @@
 #define HIGH_CURRENT 2200
 
 
-StepperMotor rotate = StepperMotor(ROTATE_CS_PIN, ROTATE_EN_PIN, LOW_CURRENT, ROTATE_MIN, ROTATE_MAX, 99.51);
-StepperMotor pinch = StepperMotor(PINCH_CS_PIN, PINCH_EN_PIN, LOW_CURRENT, PINCH_MIN, PINCH_MAX, 199.02);
-StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, HIGH_CURRENT, LIFT_MIN, LIFT_MAX, 29.16);
+StepperMotor rotate = StepperMotor(ROTATE_CS_PIN, ROTATE_EN_PIN, ROTATE_LS_PIN, LOW_CURRENT, ROTATE_MIN, ROTATE_MAX, 99.51);
+StepperMotor pinch = StepperMotor(PINCH_CS_PIN, PINCH_EN_PIN, PINCH_LS_PIN, LOW_CURRENT, PINCH_MIN, PINCH_MAX, 199.02);
+StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, LIFT_LS_PIN, HIGH_CURRENT, LIFT_MIN, LIFT_MAX, 29.16);
 
 void setup() { 
 	Serial.begin(9600);
