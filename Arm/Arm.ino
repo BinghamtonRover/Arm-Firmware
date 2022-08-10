@@ -11,15 +11,15 @@
 // Pinouts
 #define SWIVEL_EN_PIN 35
 #define SWIVEL_CS_PIN 10
-#define SWIVEL_LS_PIN 42
+#define SWIVEL_LS_PIN 7
 
 #define EXTEND_EN_PIN 40 // 34
 #define EXTEND_CS_PIN 36 // 37
-#define EXTEND_LS_PIN 43
+#define EXTEND_LS_PIN 8
 
 #define LIFT_EN_PIN 34 // 40
 #define LIFT_CS_PIN 37 // 36
-#define LIFT_LS_PIN 45
+#define LIFT_LS_PIN 9
 
 // Limits for the joints, in terms of radians from their limit switches
 #define SWIVEL_MIN -2 * PI  // INFINITY // can swivel in endless circles
