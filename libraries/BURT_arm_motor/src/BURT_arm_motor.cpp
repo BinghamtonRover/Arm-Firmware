@@ -70,8 +70,9 @@ void StepperMotor::setup() {
 }
 
 void StepperMotor::calibrate() { 
-	while(!readLimitSwitch()) moveBy(PI/180);
-	angle = 0;
+	while(!readLimitSwitch()) moveBy(-PI/180);
+	driver.XACTUAL(radToSteps(minLimit));
+	angle = minLimit;
 	Serial.println("StepperMotor calibrated.");
 }
 
