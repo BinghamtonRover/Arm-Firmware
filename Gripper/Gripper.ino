@@ -35,6 +35,15 @@
 #define CAN_LIFT_ID 0
 #define CAN_PRECISE_PINCH_ID 0
 #define CAN_CALIBRATE_ID 0
+#define CAN_SEND_PACKET_ID 0
+
+// Sensor Pins
+#define TEMP1_PIN 0
+#define TEMP2_PIN 0
+#define TEMP3_PIN 0
+#define GYRO_X_PIN 0
+#define GYRO_Y_PIN 0
+#define GYRO_Z_PIN 0
 
 // Misc
 #define LOW_CURRENT 1300
@@ -46,6 +55,13 @@ StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, LIFT_LS_PIN, HIGH_CUR
 
 void setup()
 {
+	pinMode(TEMP1_PIN, INPUT);
+	pinMode(TEMP2_PIN, INPUT);
+	pinMode(TEMP3_PIN, INPUT);
+	pinMode(GYRO_X_PIN, INPUT);
+	pinMode(GYRO_Y_PIN, INPUT);
+	pinMode(GYRO_Z_PIN, INPUT);
+
 	Serial.begin(9600);
 	Serial.println("Finished stepper motor initialization.");
 	BurtCan::setup();
@@ -79,6 +95,18 @@ void calibrate()
 	pinch.calibrate();
 	rotate.calibrate();
 	lift.calibrate();
+}
+
+void sendCANPacket()
+{
+	uint8_t TEMP1 = analogRead(TEMP1_PIN);
+	uint8_t TEMP2 = analogRead(TEMP2_PIN);
+	uint8_t TEMP3 = analogRead(TEMP3_PIN);
+	uint8_t GYROX = analogRead(GYRO_X_PIN);
+	uint8_t GYROY = analogRead(GYRO_Y_PIN);
+	uint8_t GYROZ = analogRead(GYRO_Z_PIN);
+	uint8_t data[] = {TEMP1, TEMP2, TEMP3, GYROX, GYROY, GYROZ, 0, 0};
+	BurtCan::send(CAN_SEND_PACKET_ID, data);
 }
 
 /* Handler functions for the controller inputs.
