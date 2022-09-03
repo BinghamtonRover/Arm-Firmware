@@ -47,15 +47,6 @@
 #define CAN_PRECISE_EXTEND_ID 0
 #define CAN_PRECISE_LIFT_ID 0
 #define CAN_CALIBRATE_ID 0
-#define CAN_SEND_PACKET_ID 0
-
-// Sensor Pins
-#define TEMP1_PIN 0
-#define TEMP2_PIN 0
-#define TEMP3_PIN 0
-#define GYRO_X_PIN 0
-#define GYRO_Y_PIN 0
-#define GYRO_Z_PIN 0
 
 // Misc
 #define MOTOR_CURRENT 3000 // current ratings for stepper motors
@@ -76,13 +67,6 @@ void setup()
 	pinMode(SWIVEL_CS_PIN, OUTPUT);
 	pinMode(EXTEND_CS_PIN, OUTPUT);
 	pinMode(LIFT_CS_PIN, OUTPUT);
-	pinMode(TEMP1_PIN, INPUT);
-	pinMode(TEMP2_PIN, INPUT);
-	pinMode(TEMP3_PIN, INPUT);
-	pinMode(GYRO_X_PIN, INPUT);
-	pinMode(GYRO_Y_PIN, INPUT);
-	pinMode(GYRO_Z_PIN, INPUT);
-
 	digitalWrite(SWIVEL_CS_PIN, HIGH);
 	digitalWrite(EXTEND_CS_PIN, HIGH);
 	digitalWrite(LIFT_CS_PIN, HIGH);
@@ -154,18 +138,6 @@ void calibrate()
 	gripperX = CALIBRATED_X;
 	gripperY = CALIBRATED_Y;
 	gripperZ = CALIBRATED_Z;
-}
-
-void sendCANPacket()
-{
-	uint8_t TEMP1 = analogRead(TEMP1_PIN);
-	uint8_t TEMP2 = analogRead(TEMP2_PIN);
-	uint8_t TEMP3 = analogRead(TEMP3_PIN);
-	uint8_t GYROX = analogRead(GYRO_X_PIN);
-	uint8_t GYROY = analogRead(GYRO_Y_PIN);
-	uint8_t GYROZ = analogRead(GYRO_Z_PIN);
-	uint8_t data[] = {TEMP1, TEMP2, TEMP3, GYROX, GYROY, GYROZ, 0, 0};
-	BurtCan::send(CAN_SEND_PACKET_ID, data);
 }
 
 /* Handler functions for the controller inputs.
