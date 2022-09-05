@@ -48,6 +48,10 @@
 #define CAN_PRECISE_LIFT_ID 0
 #define CAN_CALIBRATE_ID 0
 
+// CanBus Signal IDs
+#define CAN_SIGNAL_DATA_PACKET_1 0x1C
+#define CAN_SIGNAL_DATA_PACKET_2 0x1D
+
 // Misc
 #define MOTOR_CURRENT 3000 // current ratings for stepper motors
 
@@ -99,10 +103,67 @@ void loop()
 	BurtCan::update();
 	// delay(1000);
 
+	broadcastPackets();
+
 	// Temporary Serial Monitor interface for testing
 	String input = Serial.readString();
 	parseSerialCommand(input);
 	delay(500);
+}
+
+void reducedPrecisionFloat(float val, uint8_t arr[])
+{
+	uint16_t convertedNum = (uint16_t)(val * 100 + 0.5);
+	arr[0] = (uint8_t)convertedNum << 8;
+	arr[1] = (uint8_t)convertedNum & 0xff;
+}
+
+struct split_uint16
+{
+	uint8_t msb;
+	uint8_t lsb;
+}
+
+struct split_uint16
+splitInt(uint16_t val)
+{
+	struct split_uint16 split;
+	split.msb = val >> 8;
+	split.lsb = val & 0xff;
+	return split;
+}
+
+/**
+ * Will send out data packets in accordancec with the "CAN Codes" google doc specification.
+ */
+void broadcastPackets()
+{
+	// The angles (represented) as floats must be stored as 2 bytes each to send over CAN. So we multiply the floats by 10000, then round to a 16 bit integer.
+	struct split_uint16 swivel_current = splitInt((uint16_t)(swivel.current * 10000 + 0.5));
+	struct split_uint16 swivel_target = splitInt((uint16_t)(swivel.angle * 10000 + 0.5));
+	struct split_uint16 extend_current = splitInt((uint16_t)(extend.current * 10000 + 0.5));
+	struct split_uint16 extend_target = splitInt((uint16_t)(extend.angle * 10000 + 0.5));
+	struct split_uint16 lift_current = splitInt((uint16_t)(lift.current * 10000 + 0.5));
+	struct split_uint16 lift_target = splitInt((uint16_t)(lift.angle * 10000 + 0.5));
+	uint8_t data1[8] = {swivel_current.lsb, swivel_current.msb, swivel_target.lsb, swivel_target.msb, extend_current.lsb, extend_current.msb, extend_target.lsb, extend_target.msb};
+	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, data1);
+
+	// The following flags are determined according to the "CAN Codes" google doc.
+	uint8_t motor_info = 0b00000000;
+	if (!swivel.isFinished)
+		motor_info |= 0b00100000;
+	if (swivel.readLimitSwitch())
+		motor_info |= 0b00010000;
+	if (!extend.isFinished)
+		motor_info |= 0b00001000;
+	if (extend.readLimitSwitch())
+		motor_info |= 0b00000100;
+	if (!lift.isFinished)
+		motor_info |= 0b00000010;
+	if (lift.readLimitSwitch())
+		motor_info |= 0b00000001;
+	uint8_t data2[8] = {lift_current.lsb, lift_current.msb, lift_target.lsb, lift_target.msb, motor_info, 0, 0, 0};
+	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, data2);
 }
 
 void updatePosition(double newX, double newY, double newZ)
