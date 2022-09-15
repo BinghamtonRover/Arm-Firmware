@@ -172,6 +172,14 @@ class StepperMotor {
 		///
 		/// Assumes LOW is active since it is declared an INPUT_PULLUP in setup.
 		bool readLimitSwitch();
+
+		short getCurrent(){
+			return current;
+		}
+		
+		float getAngle(){
+			return angle;
+		}
 };
 
 #endif
