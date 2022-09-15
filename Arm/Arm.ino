@@ -77,15 +77,14 @@ void setup() {
 	calibrate();
 	Serial.println("Finished stepper motor initialization.");
 
-	// BurtCan::setup();
-	// BurtCan::registerHandler(CAN_SWIVEL_ID, swivelHandler);
-	// BurtCan::registerHandler(CAN_EXTEND_ID, extendHandler);
-	// BurtCan::registerHandler(CAN_LIFT_ID, liftHandler);
-	// BurtCan::registerHandler(CAN_PRECISE_SWIVEL_ID, preciseSwivelHandler);
-	// BurtCan::registerHandler(CAN_PRECISE_EXTEND_ID, preciseExtendHandler);
-	// BurtCan::registerHandler(CAN_PRECISE_LIFT_ID, preciseLiftHandler);
-	// Serial.println("Finished CAN bus initialization.");
-	Serial.println("Skipped CAN bus initialization.");
+	BurtCan::setup();
+	BurtCan::registerHandler(CAN_SWIVEL_ID, swivelHandler);
+	BurtCan::registerHandler(CAN_EXTEND_ID, extendHandler);
+	BurtCan::registerHandler(CAN_LIFT_ID, liftHandler);
+	BurtCan::registerHandler(CAN_PRECISE_SWIVEL_ID, preciseSwivelHandler);
+	BurtCan::registerHandler(CAN_PRECISE_EXTEND_ID, preciseExtendHandler);
+	BurtCan::registerHandler(CAN_PRECISE_LIFT_ID, preciseLiftHandler);
+	Serial.println("Finished CAN bus initialization.");
 }
 
 void loop() {
@@ -94,7 +93,7 @@ void loop() {
 	// 	extend.fixPotentialStall();
 	// 	lift.fixPotentialStall();
 	// }
-	// BurtCan::update();
+	BurtCan::update();
 	// delay(1000);
 
 	// Temporary Serial Monitor interface for testing

@@ -90,31 +90,13 @@ void setup() {
 	lift.setup();
 	grip.setup();
 	Serial.println("Finished stepper motor initialization.");
-
 	BurtCan::setup();
-	BurtCan::registerHandler(DEMO_HANDLER_ID, demoHandler);
+	BurtCan::registerHandler(CAN_ROTATE_ID, rotateHandler);
+	BurtCan::registerHandler(CAN_PINCH_ID, pinchHandler);
+	BurtCan::registerHandler(CAN_LIFT_ID, liftHandler);
+	BurtCan::registerHandler(CAN_PRECISE_PINCH_ID, precisePinchHandler);
+	BurtCan::registerHandler(CAN_CALIBRATE_ID, calibrateHandler);
 	Serial.println("Finished CAN bus initialization.");
-
-	origin = ArmIK::calculatePosition(zeroAngles);
-	position = origin;
-	Serial.print("Origin: ");
-	origin.print();
-
-
-	// CAN is not working. This is a simple "dance" code
-	// float destination = 0;
-	// int direction = 1;
-	// Serial.println("CAN is not working. Doing a dance routine instead.");
-	// while (true) {
-	// 	if (lift.isFinished()) {
-	// 		Serial.print("Moving to ");
-	// 		Serial.println(destination);
-	// 		lift.moveTo(destination);
-	// 		destination += PI * direction;
-	// 		direction *= -1;
-	// 	}
-	// 	delay(10);
-	// }
 }
 
 void loop() {
