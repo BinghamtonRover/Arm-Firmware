@@ -51,7 +51,7 @@ class StepperMotor {
 		/// Used to evaluate whether the motor has trigged the limit switch. Used for calibration.
 		byte limitSwitchPin;
 
-		/// The Root Mean Square current to feed the motor. 
+		/// The Root Mean Square current to feed the motor, in mA.
 		/// 
 		/// This value is passed to TMC in #setup.
 		short current;
