@@ -54,8 +54,8 @@
 #define DEBUG true
 
 // CanBus Signal IDs
-#define CAN_SIGNAL_DATA_PACKET_1 0x1C
-#define CAN_SIGNAL_DATA_PACKET_2 0x1D
+#define CAN_SIGNAL_DATA_PACKET_1 0xE5
+#define CAN_SIGNAL_DATA_PACKET_2 0xE6
 
 // Misc
 #define LOW_CURRENT 1300
@@ -145,31 +145,30 @@ splitInt(uint16_t val)
  */
 void broadcastPackets()
 {
-	// The angles (represented) as floats must be stored as 2 bytes each to send over CAN. Since we know that the radians will be between 0-2pi, we can divide by 2pi to get the number as a proportion, then take 5 decimals of precision by multiplying and truncating.
-	struct split_uint16 rotate_current = splitInt((uint16_t)(rotate.getCurrent() / (2 * PI) * 100000));
-	struct split_uint16 rotate_target = splitInt((uint16_t)(rotate.getAngle() / (2 * PI) * 100000));
-	struct split_uint16 pinch_current = splitInt((uint16_t)(pinch.getCurrent() / (2 * PI) * 100000));
-	struct split_uint16 pinch_target = splitInt((uint16_t)(pinch.getAngle() / (2 * PI) * 100000));
-	struct split_uint16 lift_current = splitInt((uint16_t)(lift.getCurrent() / (2 * PI) * 100000));
-	struct split_uint16 lift_target = splitInt((uint16_t)(lift.getAngle() / (2 * PI) * 100000));
-	uint8_t data1[8] = {rotate_current.lsb, rotate_current.msb, rotate_target.lsb, rotate_target.msb, pinch_current.lsb, pinch_current.msb, pinch_target.lsb, pinch_target.msb};
+	uint8_t data1[8] = {0,0,0,0,0,0,0,0};
+	BurtCan::packFloat(data1,rotate.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(&data1[2],rotate.getAngle(),2,0,2*PI);
+	BurtCan::packFloat(&data1[4],pinch.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(&data1[6],pinch.getAngle(),2,0,2*PI);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, data1);
 
 	// The following flags are determined according to the "CAN Codes" google doc.
 	uint8_t motor_info = 0b00000000;
-	if (!rotate.isFinished())
+	if (!swivel.isFinished())
 		motor_info |= 0b00100000;
-	if (rotate.readLimitSwitch())
+	if (swivel.readLimitSwitch())
 		motor_info |= 0b00010000;
-	if (!pinch.isFinished())
+	if (!extend.isFinished())
 		motor_info |= 0b00001000;
-	if (pinch.readLimitSwitch())
+	if (extend.readLimitSwitch())
 		motor_info |= 0b00000100;
 	if (!lift.isFinished())
 		motor_info |= 0b00000010;
 	if (lift.readLimitSwitch())
 		motor_info |= 0b00000001;
-	uint8_t data2[8] = {lift_current.lsb, lift_current.msb, lift_target.lsb, lift_target.msb, motor_info, 0, 0, 0};
+	uint8_t data2[8] = {0,0,0,0, motor_info, 0, 0, 0};
+	BurtCan::packFloat(data2,pinch.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(&data2[2],lift.getAngle(),2,0,2*PI);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, data2);
 }
 

@@ -49,8 +49,8 @@
 #define CAN_CALIBRATE_ID 0
 
 // CanBus Signal IDs
-#define CAN_SIGNAL_DATA_PACKET_1 0x1C
-#define CAN_SIGNAL_DATA_PACKET_2 0x1D
+#define CAN_SIGNAL_DATA_PACKET_1 0xE3
+#define CAN_SIGNAL_DATA_PACKET_2 0xE4
 
 // Misc
 #define MOTOR_CURRENT 3000  // current ratings for stepper motors
@@ -108,41 +108,15 @@ void loop() {
 }
 
 /**
- * @brief A simple struct to help with storing 16 bit numbers as individual bytes.
- */
-struct split_uint16
-{
-	uint8_t msb;
-	uint8_t lsb;
-};
-/**
- * @brief Splits a 16 bit number into 2 bytes (most significant byte and least significant byte)
- * 
- * @param val The number to split
- * @return struct split_uint16
- */
-struct split_uint16
-splitInt(uint16_t val)
-{
-	struct split_uint16 split;
-	split.msb = val >> 8;
-	split.lsb = val & 0xff;
-	return split;
-}
-
-/**
  * Will send out data packets in accordance with the "CAN Codes" google doc specification.
  */
 void broadcastPackets()
 {
-	// The angles (represented) as floats must be stored as 2 bytes each to send over CAN. Since we know that the radians will be between 0-2pi, we can divide by 2pi to get the number as a proportion, then take 5 decimals of precision by multiplying and truncating.
-	struct split_uint16 swivel_current = splitInt((uint16_t)(swivel.getCurrent() / (2 * PI) * 100000));
-	struct split_uint16 swivel_target = splitInt((uint16_t)(swivel.getAngle() / (2 * PI) * 100000));
-	struct split_uint16 extend_current = splitInt((uint16_t)(extend.getCurrent() / (2 * PI) * 100000));
-	struct split_uint16 extend_target = splitInt((uint16_t)(extend.getAngle() / (2 * PI) * 100000));
-	struct split_uint16 lift_current = splitInt((uint16_t)(lift.getCurrent() / (2 * PI) * 100000));
-	struct split_uint16 lift_target = splitInt((uint16_t)(lift.getAngle() / (2 * PI) * 100000));
-	uint8_t data1[8] = {swivel_current.lsb, swivel_current.msb, swivel_target.lsb, swivel_target.msb, extend_current.lsb, extend_current.msb, extend_target.lsb, extend_target.msb};
+	uint8_t data1[8] = {0,0,0,0,0,0,0,0};
+	BurtCan::packFloat(data1,swivel.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(&data1[2],swivel.getAngle(),2,0,2*PI);
+	BurtCan::packFloat(&data1[4],extend.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(&data1[6],extend.getAngle(),2,0,2*PI);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, data1);
 
 	// The following flags are determined according to the "CAN Codes" google doc.
@@ -159,7 +133,9 @@ void broadcastPackets()
 		motor_info |= 0b00000010;
 	if (lift.readLimitSwitch())
 		motor_info |= 0b00000001;
-	uint8_t data2[8] = {lift_current.lsb, lift_current.msb, lift_target.lsb, lift_target.msb, motor_info, 0, 0, 0};
+	uint8_t data2[8] = {0,0,0,0, motor_info, 0, 0, 0};
+	BurtCan::packFloat(data2,lift.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(&data2[2],lift.getAngle(),2,0,2*PI);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, data2);
 }
 
