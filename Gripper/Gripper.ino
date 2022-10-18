@@ -154,13 +154,13 @@ void broadcastPackets()
 
 	// The following flags are determined according to the "CAN Codes" google doc.
 	uint8_t motor_info = 0b00000000;
-	if (!swivel.isFinished())
+	if (!rotate.isFinished())
 		motor_info |= 0b00100000;
-	if (swivel.readLimitSwitch())
+	if (rotate.readLimitSwitch())
 		motor_info |= 0b00010000;
-	if (!extend.isFinished())
+	if (!pinch.isFinished())
 		motor_info |= 0b00001000;
-	if (extend.readLimitSwitch())
+	if (pinch.readLimitSwitch())
 		motor_info |= 0b00000100;
 	if (!lift.isFinished())
 		motor_info |= 0b00000010;
