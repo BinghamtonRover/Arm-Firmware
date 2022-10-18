@@ -167,7 +167,7 @@ void broadcastPackets()
 	if (lift.readLimitSwitch())
 		motor_info |= 0b00000001;
 	uint8_t data2[8] = {0,0,0,0, motor_info, 0, 0, 0};
-	BurtCan::packFloat(data2,pinch.getCurrent(),2,0,2*PI);
+	BurtCan::packFloat(data2,lift.getCurrent(),2,0,2*PI);
 	BurtCan::packFloat(&data2[2],lift.getAngle(),2,0,2*PI);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, data2);
 }
