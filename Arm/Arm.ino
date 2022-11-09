@@ -116,7 +116,7 @@ void broadcastPackets()
 {
 	struct ArmPacket1 packet(swivel.getCurrent(),swivel.getAngle(),extend.getCurrent(),extend.getAngle());
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, BurtCan::structToBytes(packet));
-	struct ArmPacket2 packet2(lift.getCurrent(),lift.getAngle(),!swivel.isFinished(),swivel.readLimitSwitch(),!extend.isFinished(),extend.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch());
+	struct ArmPacket2 packet2(lift.getCurrent(),lift.getAngle(),!swivel.isFinished(),swivel.readLimitSwitch(),!extend.isFinished(),extend.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch(),0,0,0);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, BurtCan::structToBytes(packet2));
 }
 

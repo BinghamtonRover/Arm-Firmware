@@ -127,7 +127,7 @@ void broadcastPackets()
 {
 	struct GripperPacket1 packet(rotate.getCurrent(),rotate.getAngle(),pinch.getCurrent(),pinch.getAngle());
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, BurtCan::structToBytes(packet));
-	struct GripperPacket2 packet2(lift.getCurrent(),lift.getAngle(),!rotate.isFinished(),rotate.readLimitSwitch(),!pinch.isFinished(),pinch.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch());
+	struct GripperPacket2 packet2(lift.getCurrent(),lift.getAngle(),!rotate.isFinished(),rotate.readLimitSwitch(),!pinch.isFinished(),pinch.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch(),0,0,0);
 	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, BurtCan::structToBytes(packet2));
 }
 
