@@ -2,6 +2,8 @@
 #include <BURT_arm_IK.h>
 #include <BURT_arm_motor.h>
 #include <BURT_can.h>
+#include "data/can/arm.h"
+
 
 /* TODO: 
  - handle gyroscope inputs
@@ -112,31 +114,10 @@ void loop() {
  */
 void broadcastPackets()
 {
-	uint8_t data1[8] = {0,0,0,0,0,0,0,0};
-	BurtCan::packFloat(data1,swivel.getCurrent(),2,0,2*PI);
-	BurtCan::packFloat(&data1[2],swivel.getAngle(),2,0,2*PI);
-	BurtCan::packFloat(&data1[4],extend.getCurrent(),2,0,2*PI);
-	BurtCan::packFloat(&data1[6],extend.getAngle(),2,0,2*PI);
-	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, data1);
-
-	// The following flags are determined according to the "CAN Codes" google doc.
-	uint8_t motor_info = 0b00000000;
-	if (!swivel.isFinished())
-		motor_info |= 0b00100000;
-	if (swivel.readLimitSwitch())
-		motor_info |= 0b00010000;
-	if (!extend.isFinished())
-		motor_info |= 0b00001000;
-	if (extend.readLimitSwitch())
-		motor_info |= 0b00000100;
-	if (!lift.isFinished())
-		motor_info |= 0b00000010;
-	if (lift.readLimitSwitch())
-		motor_info |= 0b00000001;
-	uint8_t data2[8] = {0,0,0,0, motor_info, 0, 0, 0};
-	BurtCan::packFloat(data2,lift.getCurrent(),2,0,2*PI);
-	BurtCan::packFloat(&data2[2],lift.getAngle(),2,0,2*PI);
-	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, data2);
+	struct ArmPacket1 packet(swivel.getCurrent(),swivel.getAngle(),extend.getCurrent(),extend.getAngle());
+	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, BurtCan::structToBytes(packet));
+	struct ArmPacket2 packet2(lift.getCurrent(),lift.getAngle(),!swivel.isFinished(),swivel.readLimitSwitch(),!extend.isFinished(),extend.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch());
+	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, BurtCan::structToBytes(packet2));
 }
 
 void updatePosition(double newX, double newY, double newZ) {

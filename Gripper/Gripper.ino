@@ -2,6 +2,7 @@
 #include <BURT_arm_IK.h>
 #include <BURT_arm_motor.h>
 #include <BURT_can.h>
+#include "data/can/gripper.h"
 
 /* TODO: 
  - handle gyroscope inputs
@@ -120,56 +121,14 @@ void loop() {
 }
 
 /**
- * @brief A simple struct to help with storing 16 bit numbers as individual bytes.
- */
-struct split_uint16
-{
-	uint8_t msb;
-	uint8_t lsb;
-};
-/**
- * @brief Splits a 16 bit number into 2 bytes (most significant byte and least significant byte)
- * 
- * @param val The number to split
- * @return struct split_uint16
- */
-struct split_uint16
-splitInt(uint16_t val)
-{
-	struct split_uint16 split = {val >> 8, val & 0xff};
-	return split;
-}
-
-/**
  * Will send out data packets in accordance with the "CAN Codes" google doc specification.
  */
 void broadcastPackets()
 {
-	uint8_t data1[8] = {0,0,0,0,0,0,0,0};
-	BurtCan::packFloat(data1,rotate.getCurrent(),2,0,2*PI);
-	BurtCan::packFloat(&data1[2],rotate.getAngle(),2,0,2*PI);
-	BurtCan::packFloat(&data1[4],pinch.getCurrent(),2,0,2*PI);
-	BurtCan::packFloat(&data1[6],pinch.getAngle(),2,0,2*PI);
-	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, data1);
-
-	// The following flags are determined according to the "CAN Codes" google doc.
-	uint8_t motor_info = 0b00000000;
-	if (!rotate.isFinished())
-		motor_info |= 0b00100000;
-	if (rotate.readLimitSwitch())
-		motor_info |= 0b00010000;
-	if (!pinch.isFinished())
-		motor_info |= 0b00001000;
-	if (pinch.readLimitSwitch())
-		motor_info |= 0b00000100;
-	if (!lift.isFinished())
-		motor_info |= 0b00000010;
-	if (lift.readLimitSwitch())
-		motor_info |= 0b00000001;
-	uint8_t data2[8] = {0,0,0,0, motor_info, 0, 0, 0};
-	BurtCan::packFloat(data2,lift.getCurrent(),2,0,2*PI);
-	BurtCan::packFloat(&data2[2],lift.getAngle(),2,0,2*PI);
-	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, data2);
+	struct GripperPacket1 packet(rotate.getCurrent(),rotate.getAngle(),pinch.getCurrent(),pinch.getAngle());
+	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, BurtCan::structToBytes(packet));
+	struct GripperPacket2 packet2(lift.getCurrent(),lift.getAngle(),!rotate.isFinished(),rotate.readLimitSwitch(),!pinch.isFinished(),pinch.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch());
+	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, BurtCan::structToBytes(packet2));
 }
 
 void calibrate() {
