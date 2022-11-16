@@ -123,12 +123,26 @@ void loop() {
 /**
  * Will send out data packets in accordance with the "CAN Codes" google doc specification.
  */
-void broadcastPackets()
-{
-	struct GripperPacket1 packet(rotate.getCurrent(),rotate.getAngle(),pinch.getCurrent(),pinch.getAngle());
-	BurtCan::send(CAN_SIGNAL_DATA_PACKET_1, BurtCan::structToBytes(packet));
-	struct GripperPacket2 packet2(lift.getCurrent(),lift.getAngle(),!rotate.isFinished(),rotate.readLimitSwitch(),!pinch.isFinished(),pinch.readLimitSwitch(),!lift.isFinished(),lift.readLimitSwitch(),0,0,0);
-	BurtCan::send(CAN_SIGNAL_DATA_PACKET_2, BurtCan::structToBytes(packet2));
+void broadcastPackets() {
+  GripperPacket1 packet(
+    rotate.getCurrent(), 
+    rotate.getAngle(), 
+    pinch.getCurrent(),
+    pinch.getAngle()
+  );
+  BurtCan::send<GripperPacket1>(CAN_SIGNAL_DATA_PACKET_1, packet);
+  GripperPacket2 packet2(
+    lift.getCurrent(), 
+    lift.getAngle(),
+    !rotate.isFinished(),
+    rotate.readLimitSwitch(),
+    !pinch.isFinished(),
+    pinch.readLimitSwitch(),
+    !lift.isFinished(),
+    lift.readLimitSwitch(),
+    0,0,0
+  );
+  BurtCan::send<GripperPacket2>(CAN_SIGNAL_DATA_PACKET_2, packet2);
 }
 
 void calibrate() {
