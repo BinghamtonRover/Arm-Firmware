@@ -13,6 +13,7 @@ if [%1] == [] (
 	echo To override this, pass your sketchbook as the first argument.
 ) else (
 	echo Using user-provided sketchbook location: %1
+	set sketchbook=%1
 )
 
 rem Verify sketchbook directory exists
