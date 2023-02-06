@@ -7,7 +7,7 @@
 #ifndef burt_arm_ik_h
 #define burt_arm_ik_h
 
-#include <math.h>  // needed for trig functions
+#include <Arduino.h>  // <-- includes math.h
 #include <BURT_arm_constants.h>
 
 /// Defines the angles of the arm. 
@@ -24,13 +24,38 @@ struct Angles {
 	double C;
 
 	Angles(double theta, double B, double C) : theta(theta), B(B), C(C) { }
+
+	bool isFailure() { return isnan(theta) || isnan(B) || isnan(C); }
+
+	void print() {
+		Serial.print("Theta: ");
+		Serial.print(theta);
+		Serial.print(", B: ");
+		Serial.print(B);
+		Serial.print(", C: ");
+		Serial.println(C);
+	}
 };
 
 /// Represents a position in 3D space. 
 struct Coordinates { 
 	double x, y, z; 
 
+	Coordinates() : x(0), y(0), z(0) { }
 	Coordinates(double x, double y, double z) : x(x), y(y), z(z) { }
+	Coordinates operator+(const Coordinates other) const { 
+		return Coordinates(x + other.x, y + other.y, z + other.z);
+	}
+
+	void print() {
+		Serial.print("(");
+		Serial.print(x);
+		Serial.print(", ");	
+		Serial.print(y);
+		Serial.print(", ");	
+		Serial.print(z);
+		Serial.println(").");
+	}
 };
 
 /// A helper class to handle inverse kinematics calculations for the robot arm. 
@@ -59,10 +84,12 @@ struct Coordinates {
 /// - This [paper](https://www.researchgate.net/publication/251743615_Triangulation_A_new_algorithm_for_Inverse_Kinematics) that explains a simple algorithm for inverse kinematics
 class ArmIK {
 	/// The length of the "humerus" (attached to the rover), in millimeters. 
-	static constexpr double a = 724.8;
+	// static constexpr double a = 724.8;  // real arm
+	static constexpr double a = 224.38;  // demo arm
 
 	/// The length of the "forearm" (attached to the gripper), in millimeters. 
-	static constexpr double b = 525.8;
+	// static constexpr double b = 525.8;  // real arm
+	static constexpr double b = 224.38;  // demo arm
 
 	/* Maximum error tolerance. 
 

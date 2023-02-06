@@ -60,9 +60,9 @@ Angles ArmIK::calculateAngles(Coordinates coordinates) {
 	// Use the law of cosines to determine the two angles.
 	double c = sqrt(k*k + z*z);
 	double C  = acos( (a*a + b*b - c*c) / (2*a*b) );
-	double B1 = acos( (a*a - b*b + c*c) / (2*a*c) );
-	double B2 = atan2(z, k);
-	double B  = B1 + B2;
+	double b1 = acos( (a*a - b*b + c*c) / (2*a*c) );
+	double b2 = atan2(z, k);
+	double B  = b1 + b2;
 
 	// Double-check the logic by solving for the supposed position.
 	Angles angles(theta, B, C);

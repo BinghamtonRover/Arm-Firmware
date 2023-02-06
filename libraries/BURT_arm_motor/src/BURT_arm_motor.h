@@ -13,11 +13,7 @@
 /// How often to check if any of the motors have stalled.
 #define STALL_CHECK_INTERVAL 100  // ms
 
-/// The speed of the motors (units unknown).
-#define MOTOR_SPEED 5
-
-/// The acceleration of the motor (units unknown).
-#define MOTOR_ACCELERATION 1
+#define IS_CONNECTED true
 
 /// Controls a TMC 5160 stepper motor. 
 /// 
@@ -66,10 +62,7 @@ class StepperMotor {
 		/// WARNING: Moving higher than this value can cause damage to the arm.
 		float maxLimit;
 
-		/// The ratio of the gears in the gearbox for this motor. 
-		/// 
-		/// This determines how many steps are in a radian and vice-versa. See #radToSteps.
-		float gearboxRatio;
+		float stepsPer180;
 
 		/// The time (in milliseconds) that the next stall check is scheduled for. 
 		/// 
@@ -87,7 +80,7 @@ class StepperMotor {
 
 		/// Converts the desired radians to a number of steps. 
 		/// 
-		/// The result is specific to this motor, as the #gearboxRatio changes the calculations.
+		/// The result is specific to this motor, as #stepsPer180 changes the calculations.
 		int radToSteps(float radians);
 
 		/// Checks if this motor has stalled. 
@@ -99,20 +92,32 @@ class StepperMotor {
 		/// one to check for stalls, and will cause a stack overflow. 
 		bool didStall();
 
+		int currentSteps;
+
+		float speed;
+
+		float accel;
+
+		String name;
+
 	public: 
 		/// The current angle of the joint this motor is powering.
 		float angle;
 
 		/// Manage a stepper motor with the given pins.
-		StepperMotor(byte chipSelectPin, byte enablePin, byte limitSwitchPin, int current, float minLimit, float maxLimit, float gearboxRatio) : 
+		StepperMotor(byte chipSelectPin, byte enablePin, byte limitSwitchPin, int current, float minLimit, float maxLimit, float stepsPer180, float speed, float accel, String name) : 
 			chipSelectPin(chipSelectPin),
 			enablePin(enablePin),
 			limitSwitchPin(limitSwitchPin),
 			current(current),
 			minLimit(minLimit),
 			maxLimit(maxLimit),
-			gearboxRatio(gearboxRatio),
-			driver(TMC5160Stepper(SPI, chipSelectPin, 0.075)) { }
+			stepsPer180(stepsPer180),
+			driver(TMC5160Stepper(SPI, chipSelectPin, 0.075)), 
+			currentSteps(0),
+			speed(speed),
+			accel(accel),
+			name(name) { }
 
 		/// Initializes the motor.
 		/// 
@@ -161,7 +166,7 @@ class StepperMotor {
 		/// 
 		/// Use in debugging only. In production code, use #moveBy. This method can help determine
 		/// when the conversion factor (#radToSteps) is off, or the motor is misbehaving.
-		void debugMoveSteps(int steps);
+		void debugMoveToStep(int destination);
 
 		/// Checks if the limit switch is activated.
 		///

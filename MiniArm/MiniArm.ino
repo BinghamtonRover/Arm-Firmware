@@ -4,43 +4,43 @@
 #include <BURT_can.h>
 
 /* TODO: 
- - handle gyroscope inputs
- - handle recoil
+ * Properly integrate CAN protocol using new structs. This uses the old version of CAN.
+ * Modify CAN protocol to allow manual and IK control (see handler function)
+ * Add proper parseSerial function to parse data over Serial (not strings!)
+ * Detect stalls/slips
 */
 
 // Pinouts
+#define SWIVEL_EN_PIN 35
+#define SWIVEL_CS_PIN 10
+#define SWIVEL_LS_PIN 0
+#define SWIVEL_STEPS_PER_180 200000
+#define SWIVEL_SPEED 51200
+#define SWIVEL_ACCEL 51200
 
-// Motor driver 2
-#define LIFT_EN_PIN 34
-#define LIFT_CS_PIN 37
-#define LIFT_LS_PIN 9
+#define EXTEND_EN_PIN 40 // 34
+#define EXTEND_CS_PIN 36 // 37
+#define EXTEND_LS_PIN 0
+#define EXTEND_STEPS_PER_180 220000
+#define EXTEND_SPEED 51200
+#define EXTEND_ACCEL 51200
 
-// Motor driver 3
-#define GRIP_EN_PIN 40
-#define GRIP_CS_PIN 36
-#define GRIP_LS_PIN 8
+// DEMO: Two parallel motors for the shoulder joint, in opposite directions.
+#define EXTEND2_EN_PIN 34 // 40
+#define EXTEND2_CS_PIN 37 // 36
+#define EXTEND2_LS_PIN 0
+#define EXTEND2_STEPS_PER_180 -220000
 
 // Limits for the joints, in terms of radians from their limit switches
 // DEMO: All joints are limited to +- 30 degrees. Because we check from the 
 // limit switches, this means the limits are [0, 60] degrees, or [0, pi/3] rad
-#define LIFT_MIN 0
-#define LIFT_MAX PI
-#define LIFT_CURRENT 400
-#define LIFT_STEPS_PER_180 750000
-#define LIFT_SPEED 51200*2
-#define LIFT_ACCEL 51200*2
+#define SWIVEL_MIN 0
+#define SWIVEL_MAX PI
+#define SWIVEL_CURRENT 1200
 
-#define GRIP_MIN 0
-#define GRIP_MAX PI
-#define GRIP_CURRENT 800
-#define GRIP_STEPS_PER_180 750000
-#define GRIP_SPEED 51200*2
-#define GRIP_ACCEL 51200*2
-
-// When the joints are at their maximum angles, these are the coordinates of the gripper.
-#define CALIBRATED_X 0
-#define CALIBRATED_Y 366.420
-#define CALIBRATED_Z 1117.336
+#define EXTEND_MIN 0
+#define EXTEND_MAX PI
+#define EXTEND_CURRENT 2800
 
 // CanBus IDs
 #define DEMO_HANDLER_ID 1
@@ -58,8 +58,10 @@
  These coordinates are passed to the IK algorithms which return angles for the 
  joints of the arm, [swivel], [extend], and [lift]. 
 */ 
-StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, LIFT_LS_PIN, LIFT_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_STEPS_PER_180, LIFT_SPEED, LIFT_ACCEL, "Lift");
-StepperMotor grip = StepperMotor(GRIP_CS_PIN, GRIP_EN_PIN, GRIP_LS_PIN, GRIP_CURRENT, GRIP_MIN, GRIP_MAX, GRIP_STEPS_PER_180, GRIP_SPEED, GRIP_ACCEL, "Grip");
+
+StepperMotor swivel = StepperMotor(SWIVEL_CS_PIN, SWIVEL_EN_PIN, SWIVEL_LS_PIN, SWIVEL_CURRENT, SWIVEL_MIN, SWIVEL_MAX, SWIVEL_STEPS_PER_180, SWIVEL_SPEED, SWIVEL_ACCEL, "Swivel");
+StepperMotor extend1 = StepperMotor(EXTEND_CS_PIN, EXTEND_EN_PIN, EXTEND_LS_PIN, EXTEND_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND_STEPS_PER_180, EXTEND_SPEED, EXTEND_ACCEL, "Extend1");
+StepperMotor extend2 = StepperMotor(EXTEND2_CS_PIN, EXTEND2_EN_PIN, EXTEND2_LS_PIN, EXTEND_CURRENT, EXTEND_MIN, EXTEND_MAX, EXTEND2_STEPS_PER_180, EXTEND_SPEED, EXTEND_ACCEL, "Extend2");
 
 Angles zeroAngles(0, PI/2, PI);
 Coordinates origin, position;
@@ -73,22 +75,31 @@ void demoHandler(const CanMessage& message) {
 	float y = (data[1] / 100) * MAX_Y;
 	float z = (data[2] / 100) * MAX_Z;
 
-	// float 
-
+	// This code moves to the given coordinates:
 	Coordinates offset(x, y, z);
 	updatePosition(offset);
 
-	// Serial.println()
+	// This code moves to the given angles:
+	// float theta = (data[0] / 100) * SWIVEL_MAX;
+	// float B = (data[2] / 100) * EXTEND_MAX;
+	// swivel.moveTo(theta);
+	// extend1.moveTo(B);
+	// extend2.moveTo(B);	
 }
 
 void setup() {
 	Serial.begin(9600);
 	
-	pinMode(LIFT_CS_PIN, OUTPUT);
-	digitalWrite(LIFT_CS_PIN, HIGH);
+	pinMode(SWIVEL_CS_PIN, OUTPUT);
+	pinMode(EXTEND_CS_PIN, OUTPUT);
+	pinMode(EXTEND2_CS_PIN, OUTPUT);
+	digitalWrite(SWIVEL_CS_PIN, HIGH);
+	digitalWrite(EXTEND_CS_PIN, HIGH);
+	digitalWrite(EXTEND2_CS_PIN, HIGH);
 
-	lift.setup();
-	grip.setup();
+	swivel.setup();
+	extend1.setup();
+	extend2.setup();
 	Serial.println("Finished stepper motor initialization.");
 
 	BurtCan::setup();
@@ -100,21 +111,15 @@ void setup() {
 	Serial.print("Origin: ");
 	origin.print();
 
-
-	// CAN is not working. This is a simple "dance" code
-	// float destination = 0;
-	// int direction = 1;
-	// Serial.println("CAN is not working. Doing a dance routine instead.");
-	// while (true) {
-	// 	if (lift.isFinished()) {
-	// 		Serial.print("Moving to ");
-	// 		Serial.println(destination);
-	// 		lift.moveTo(destination);
-	// 		destination += PI * direction;
-	// 		direction *= -1;
-	// 	}
-	// 	delay(10);
-	// }
+	delay(5000);
+	Serial.println("Testing...");
+	parseSerialCommand("debug-swivel 150000");
+	delay(5000);
+	parseSerialCommand("debug-swivel -150000");
+	delay(10000);
+	parseSerialCommand("debug-swivel 0");
+	delay(5000);
+	parseSerialCommand("debug-extend -200000");
 }
 
 void loop() {
@@ -123,7 +128,6 @@ void loop() {
 		parseSerialCommand(input);
 	}
 
-	// CAN is not working on the gripper board. See [setup].
 	BurtCan::update();
 }
 
@@ -139,7 +143,9 @@ void updatePosition(Coordinates offset) {
 	}
 	Serial.print("IK finished: ");
 	newAngles.print();
-	lift.moveTo(newAngles.C - (PI/2));
+	swivel.moveTo(newAngles.theta);
+	extend1.moveTo(newAngles.B);
+	extend2.moveTo(newAngles.B);
 	position = destination;
 }
 
@@ -147,10 +153,10 @@ void parseSerialCommand(String input) {
 	// Supported commands: 
 	// 	x y z: move to origin + (x, y, z)
 	// 	reset: move to origin
-	// 	debug-lift n: lift to n steps 
-	// 	debug-rotate n: rotate to n steps 
-	// 	precise-lift: lift by n radians (without IK)
-	// 	precise-rotate: rotate by n radians (without IK)
+	// 	debug-swivel n: swivel to n steps 
+	// 	debug-extend n: extend to n steps 
+	// 	precise-swivel: swivel by n radians (without IK)
+	// 	precise-extend: extend by n radians (without IK)
 
 	if (input == "") return;
 	Serial.println("User inputted: " + input);
@@ -171,12 +177,16 @@ void parseSerialCommand(String input) {
 	String command = input.substring(0, delimiter);
 	float arg = input.substring(delimiter + 1).toFloat();
 
-	if (command == "precise-lift") {
-		lift.moveTo(arg);
-	} else if (command == "debug-lift") { 
-		lift.debugMoveToStep(arg); 
-	} else if (command == "debug-grip") {
-		grip.debugMoveToStep(arg);
+	if (command == "precise-swivel") {
+		swivel.moveTo(arg);
+	} else if (command == "precise-extend") {
+		extend1.moveTo(arg);
+		extend2.moveTo(arg);
+	} else if (command == "debug-swivel") { 
+		swivel.debugMoveToStep(arg); 
+	} else if (command == "debug-extend") { 
+		extend1.debugMoveToStep(arg);
+		extend2.debugMoveToStep(-arg);
 	} else if (command == "reset") {
 		updatePosition(Coordinates());
 	} else Serial.println("Unrecognized command");

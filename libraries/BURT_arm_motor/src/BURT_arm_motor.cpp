@@ -6,11 +6,7 @@
 #include "BURT_arm_motor.h"
 
 int StepperMotor::radToSteps(float newAngle) { 
-	Serial.print("Rotating to angle: ");
-	Serial.println(newAngle);
-	float steps = newAngle * 51200/(2 * PI) * gearboxRatio;
-	Serial.print("Rotating to steps: ");
-	Serial.println(steps);
+	float steps = newAngle * stepsPer180/PI;
 	return steps;
 }
 
@@ -26,6 +22,11 @@ void StepperMotor::setup() {
 	pinMode(limitSwitchPin,INPUT_PULLUP);
 	digitalWrite(chipSelectPin, HIGH);
 	digitalWrite(enablePin, LOW);
+
+	Serial.print("Initializing pins: ");
+	Serial.print(enablePin);
+	Serial.print(" and ");
+	Serial.println(chipSelectPin);
 	// <--
 	driver.begin();
 	driver.reset();
@@ -48,18 +49,20 @@ void StepperMotor::setup() {
 	delay(1000);
 	digitalWrite(enablePin, LOW);   // re-enable drive, to start loading in parameters
 
-	int maxVelocity = 51200 * MOTOR_SPEED;
-	int accel = 51200 * MOTOR_ACCELERATION;
-	driver.GSTAT(7);
+Serial.print("Speed/accel: ");
+Serial.print(speed);
+Serial.print(" m/s, ");
+Serial.print(accel);
+Serial.println("m/s^2");
+driver.GSTAT(7);
 	driver.rms_current(current);
 	driver.tbl(2);
 	driver.toff(9);
 	driver.pwm_freq(1);
-	driver.microsteps(256);
 	driver.a1(accel);
-	driver.v1(maxVelocity);
+	driver.v1(speed);
 	driver.AMAX(accel);
-	driver.VMAX(maxVelocity);
+	driver.VMAX(speed);
 	driver.DMAX(accel);
 	driver.d1(accel);
 	driver.vstop(100);
@@ -70,9 +73,12 @@ void StepperMotor::setup() {
 }
 
 void StepperMotor::calibrate() { 
-	while(!readLimitSwitch()) moveBy(-PI/180);
-	driver.XACTUAL(radToSteps(minLimit));
+	if (limitSwitchPin != 0) {
+		while(!readLimitSwitch()) moveBy(-PI/100);
+		driver.XACTUAL(radToSteps(minLimit));
+	}
 	angle = minLimit;
+	currentSteps = radToSteps(minLimit);
 	Serial.println("StepperMotor calibrated.");
 }
 
@@ -95,31 +101,54 @@ void StepperMotor::fixPotentialStall() {
 /// have to account for ArmConstants::maxDelta. To do so, we respect the bounds set by #minLimit 
 /// and #maxLimit, but are more conservative when exceeding ArmConstants::maxDelta.
 void StepperMotor::moveTo(float newAngle) {
-	double lowerBound = max(minLimit, angle - ArmConstants::maxDelta);
-	double upperBound = min(maxLimit, angle + ArmConstants::maxDelta);
-	angle = constrain(newAngle, lowerBound, upperBound);
-	Serial.print("Current angle: ");
-	Serial.println(angle);
-	Serial.print("Trying to get to: ");
+	// TODO: Logic to constrain by maxDelta, currently broken?
+	// double lowerBound = max(minLimit, angle - ArmConstants::maxDelta);
+	// double upperBound = min(maxLimit, angle + ArmConstants::maxDelta);
+	// angle = constrain(newAngle, lowerBound, upperBound);
+	Serial.print("[moveTo: " + name + "] Moving from ");
+	Serial.print(angle);
+	Serial.print(" to ");
 	Serial.println(newAngle);	
-	angle = constrain(newAngle, maxLimit, minLimit);
-	Serial.print("Clamped to: ");
-	Serial.println(angle);
-	driver.XTARGET(radToSteps(angle));
+	if (newAngle > maxLimit || newAngle < minLimit) { 
+		Serial.print("  ERROR: Out of bounds (valid inputs are ");
+		Serial.print(minLimit);
+		Serial.print(" to ");
+		Serial.print(maxLimit);
+		Serial.println(").");
+		return; 
+	}
+	angle = newAngle;
+	currentSteps = radToSteps(angle);
+	Serial.print("  Moving to: ");
+	Serial.print(currentSteps);
+	Serial.print(" steps (range is [-100,000 100,000]) -- ");
+	Serial.println(minLimit);
+	if (IS_CONNECTED) driver.XTARGET(currentSteps);
+	else Serial.println("Motor not connected, not moving");
 }
 
 void StepperMotor::moveBy(float radians) {
-	Serial.print("Currently at: ");
+	Serial.print("[moveBy] ");
+	Serial.print(name);
+	Serial.print(" is currently at: ");
 	Serial.println(angle);
 	moveTo(angle + radians);
 }
 
-void StepperMotor::debugMoveSteps(int steps) {
-	driver.XTARGET(steps);
+void StepperMotor::debugMoveToStep(int destination) {
+	Serial.print("Moving ");
+	Serial.print(name);
+	Serial.print(" from ");
+	Serial.print(currentSteps);
+	Serial.print(" to ");
+	Serial.print(destination);
+	Serial.println(" steps");
+	driver.XTARGET(destination);
+	currentSteps = destination;
 }
 
 bool StepperMotor::readLimitSwitch() {
-	return digitalRead(limitSwitchPin)==LOW;
+	return limitSwitchPin != 0 && digitalRead(limitSwitchPin) == LOW;
 }
 
 // The following close bracket marks the file for Doxygen
