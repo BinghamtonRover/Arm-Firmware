@@ -114,9 +114,7 @@ void parseSerial() {
   String part1 = input.substring(0, delimiter);
   String part2 = input.substring(delimiter + 1);
   String motor = part1;
-  float distance = part2.toFloat();
-  int speed = part2.toInt();
-  int steps = speed;
+  int steps = part2.toInt();
 
 
   StepperMotor* m = &wristLift;
