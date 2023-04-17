@@ -4,9 +4,7 @@
  * \{
 */
 
-#include <stdio.h>
-
-#include "BURT_arm_IK.h"
+#include "IK.h"
 
 Angles ArmIK::failure = Angles(0, 0, 0);
 

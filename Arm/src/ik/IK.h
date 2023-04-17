@@ -8,7 +8,7 @@
 #define burt_arm_ik_h
 
 #include <Arduino.h>  // <-- includes math.h
-#include <BURT_arm_constants.h>
+#include "constants.h"
 
 /// Defines the angles of the arm. 
 /// 

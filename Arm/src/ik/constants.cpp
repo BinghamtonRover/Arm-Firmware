@@ -3,7 +3,7 @@
  * \{
 */
 
-#include "BURT_arm_constants.h"
+#include "constants.h"
 
 // Real arm limits
 // double ArmConstants::extendLimits[2] = { -100,  100};

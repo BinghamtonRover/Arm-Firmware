@@ -1,7 +1,6 @@
 #include "src/utils/BURT_utils.h"
 #include "src/tmc/BURT_TMC.h"
 #include "src/ik/IK.h"
-#include "src/constants/constants.h"
 
 /* TODO: 
  - handle gyroscope inputs
