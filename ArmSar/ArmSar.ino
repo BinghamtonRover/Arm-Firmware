@@ -24,17 +24,9 @@
 #define CURRENT3 2000
 #define RATIO3 400
 
-// #define CS_PIN_1 10
-// #define EN_PIN 23
-// #define LIM_PIN 9
-// #define CURRENT 4000
-// #define RATIO 400
-
-// #define ACCEL (0x01030d4d * 2)
-// #define SPEED 0x030927e7
 #define ACCEL 0x00030d4d
-// #define ACCEL (0xFFFFFFFF / 2)
 #define SPEED 0x000327e7
+
 // 200 steps per rotation * 400:1 gear ratio * 256 microsteps per step
 #define STEP_PER_360_ARM 200 * 400 * 256
 #define STEP_PER_180_ARM (STEP_PER_360_ARM / 2)
@@ -51,6 +43,8 @@
 #define SWIVEL_RANGE   100000
 
 #define ARM_COMMAND_ID 0x23
+
+#define SERIAL_MONITOR false
 
 StepperMotor swivel(CS_PIN1, EN_PIN1, LIM_PIN1, CURRENT1, -100000, 100000, STEP_PER_180_BASE, SPEED, ACCEL, "[swivel]");
 StepperMotor shoulder(CS_PIN2, EN_PIN2, LIM_PIN2, CURRENT2, -100000, 100000, STEP_PER_180_ARM, SPEED, ACCEL, "[shoulder]");
@@ -83,17 +77,14 @@ void setup() {
   elbow.setup();
   delay(10);
 
-  Serial.println("Calibrating...");
-  // shoulder.calibrate();
-  // elbow.calibrate();
-
+  Serial.println("Not calibrating (test script)");
   Serial.println("Arm subsystem ready");
 }
 
 void loop() {
   can.update();
-  serial.update();
-  // parseSerial();
+  if (SERIAL_MONITOR) parseSerial();
+  else serial.update();
 
   swivel.update();
   shoulder.update();

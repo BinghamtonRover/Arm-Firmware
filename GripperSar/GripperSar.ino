@@ -48,6 +48,8 @@
 
 #define GRIPPER_COMMAND_ID 0x33
 
+#define SERIAL_MONITOR false
+
 StepperMotor wristLift(CS_PIN1, EN_PIN1, LIM_PIN1, CURRENT1, -100000, 100000, STEP_PER_180_WRIST_LIFT, SPEED, ACCEL, "[wrist lift]");
 StepperMotor wristRotate(CS_PIN2, EN_PIN2, LIM_PIN2, CURRENT2, -100000, 100000, STEP_PER_180_WRIST_ROTATE, SPEED, ACCEL, "[wrist rotate]");
 StepperMotor gripper(CS_PIN3, EN_PIN3, LIM_PIN3, CURRENT3, -100000, 100000, STEP_PER_180_GRIPPER, SPEED2, ACCEL, "[gripper pinch]");
@@ -72,10 +74,7 @@ void setup() {
   gripper.setup();
   delay(10);
 
-  Serial.println("Calibrating...");
-  // wristLift.calibrate();
-  // wristRotate.calibrate();
-
+  Serial.println("Skipping calibration (test script)");
   Serial.println("Gripper subsystem ready");
 }
 
@@ -85,14 +84,13 @@ void loop() {
   wristRotate.update();
   gripper.update();
 
-  serial.update();
-  // parseSerial();
+  if (SERIAL_MONITOR) parseSerial();
+  else serial.update();
 
   delay(10);
 }
 
 void handleArmCommand(const uint8_t* data, int length) {
-  // Serial.println("Received gripper command");
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
   if (command.stop) {
     wristRotate.stop();
@@ -128,5 +126,6 @@ void parseSerial() {
   }
 
   m->debugMoveToStep(steps); 
+  // OPTIONAL: Wait for the previous command to finish
   // while (!m->isFinished()) delay(100);
 }
