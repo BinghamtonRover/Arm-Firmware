@@ -1,3 +1,24 @@
 [submodule "libraries/BURT_can"]
 	path = libraries/BURT_can
 	url = https://github.com/BinghamtonRover/burt-can
+[submodule "ArmSar/utils"]
+	path = ArmSar/utils
+	url = https://github.com/BinghamtonRover/Firmware-Utilities
+[submodule "ArmSar/tmc"]
+	path = ArmSar/tmc
+	url = https://github.com/BinghamtonRover/TMC-Firmware
+[submodule "Protobuf"]
+	path = Protobuf
+	url = https://github.com/BinghamtonRover/Protobuf
+[submodule "ArmSar/src/tmc"]
+	path = ArmSar/src/tmc
+	url = https://github.com/BinghamtonRover/TMC-Firmware
+[submodule "ArmSar/src/utils"]
+	path = ArmSar/src/utils
+	url = https://github.com/BinghamtonRover/Firmware-Utilities
+[submodule "GripperSar/src/tmc"]
+	path = GripperSar/src/tmc
+	url = https://github.com/BinghamtonRover/TMC-Firmware
+[submodule "GripperSar/src/utils"]
+	path = GripperSar/src/utils
+	url = https://github.com/BinghamtonRover/Firmware-Utilities
