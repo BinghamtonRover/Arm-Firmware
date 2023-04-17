@@ -19,3 +19,9 @@
 [submodule "GripperSar/src/utils"]
 	path = GripperSar/src/utils
 	url = https://github.com/BinghamtonRover/Firmware-Utilities
+[submodule "Arm/src/utils"]
+	path = Arm/src/utils
+	url = https://github.com/BinghamtonRover/Firmware-Utilities
+[submodule "Arm/src/tmc"]
+	path = Arm/src/tmc
+	url = https://github.com/BinghamtonRover/TMC-Firmware

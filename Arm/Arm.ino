@@ -1,11 +1,10 @@
-#include <BURT_arm_constants.h>
-#include <BURT_arm_IK.h>
-#include <BURT_arm_motor.h>
-#include <BURT_can.h>
+#include "src/utils/BURT_utils.h"
+#include "src/tmc/BURT_TMC.h"
+#include "src/ik/IK.h"
+#include "src/constants/constants.h"
 
 /* TODO: 
  - handle gyroscope inputs
- - handle recoil
 */
 
 // Pinouts
