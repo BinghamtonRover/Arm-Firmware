@@ -150,16 +150,10 @@ void updateSerialMonitor() {
 	float arg = input.substring(delimiter + 1).toFloat();
 
 	if (command == "swivel") {
-		// gripperPosition.x += ArmConstants::movementSpeed * arg;
-		// setCoordinates(gripperPosition);
     swivel.moveTo(arg);
 	} else if (command == "shoulder") {
-		// gripperPosition.y += ArmConstants::movementSpeed * arg;
-		// setCoordinates(gripperPosition);
     shoulder.moveTo(arg);
 	} else if (command == "elbow") {
-		// gripperPosition.z += ArmConstants::movementSpeed * arg;
-		// setCoordinates(gripperPosition);
     elbow.moveTo(arg);
 	} else if (command == "precise-swivel") swivel.debugMoveBySteps(arg);
 	else if (command == "precise-elbow") elbow.debugMoveBySteps(arg);
