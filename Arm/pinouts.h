@@ -14,7 +14,7 @@ StepperMotorConfig swivelConfig = {
 	current: 2000, 
 	minLimit: -2 * PI,
 	maxLimit: 2 * PI,
-	stepsPerRotation: 200 * 5 * 256,
+	gearboxRatio: 5,
 	speed: SPEED,
 	accel: ACCEL,
 };
@@ -34,7 +34,7 @@ StepperMotorConfig shoulderConfig = {
 	current: 2000,
 	minLimit: 0,
 	maxLimit: PI / 2,
-	stepsPerRotation: 200 * 400 * 256,
+	gearboxRatio: 400,
 	speed: SPEED,
 	accel: ACCEL,
 };
@@ -54,7 +54,7 @@ StepperMotorConfig elbowConfig = {
 	current: 2000,
 	minLimit: -3 * PI / 4,
 	maxLimit: -PI / 4,
-	stepsPerRotation: 200 * 400 * 256,
+	gearboxRatio: 400,
 	speed: SPEED,
 	accel: ACCEL,
 };
