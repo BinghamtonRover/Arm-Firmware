@@ -27,7 +27,7 @@ struct Angles {
 
 	bool isFailure() { return isnan(theta) || isnan(B) || isnan(C); }
 
-	void print() {
+	void println() {
 		Serial.print("Theta: ");
 		Serial.print(theta);
 		Serial.print(", B: ");
@@ -47,7 +47,7 @@ struct Coordinates {
 		return Coordinates(x + other.x, y + other.y, z + other.z);
 	}
 
-	void print() {
+	void println() {
 		Serial.print("(");
 		Serial.print(x);
 		Serial.print(", ");	
