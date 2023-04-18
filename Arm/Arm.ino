@@ -9,7 +9,7 @@
 #define USE_SERIAL_MONITOR true
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
-Coordinates calibratedPosition(0, 366.420, 1117.336);
+Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
 
 /// The (x, y, z) coordinates of the gripper. 
 ///
@@ -19,19 +19,26 @@ Coordinates gripperPosition;
 
 void handleCommand(const uint8_t* buffer, int length) {
   auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
+
+  // General commands
   if (command.stop) stopAllMotors();
   if (command.calibrate) calibrateAllMotors();
 
-  // StepperMotor.moveBy only moves by this amount of radians
-  if (command.move_swivel != 0) swivel.debugMoveBySteps(command.move_swivel);
-  if (command.move_shoulder != 0) shoulder.debugMoveBySteps(command.move_swivel);
-  if (command.move_elbow != 0) shoulder.debugMoveBySteps(command.move_elbow); 
+  // Debug control: Move by individual steps
+  if (command.move_swivel_steps != 0) swivel.debugMoveBySteps(command.move_swivel_steps);
+  if (command.move_shoulder_steps != 0) shoulder.debugMoveBySteps(command.move_swivel_steps);
+  if (command.move_elbow_steps != 0) shoulder.debugMoveBySteps(command.move_elbow_steps); 
 
-  // These coordinates are saved by the IK model and translated to angles
+  // Precise control: Move by radians
+  if (command.move_swivel_radians != 0) swivel.moveBy(command.move_swivel_radians);
+  if (command.move_shoulder_radians != 0) shoulder.moveBy(command.move_swivel_radians);
+  if (command.move_elbow_radians != 0) shoulder.moveBy(command.move_elbow_radians); 
+
+  // IK control to move motors by coordinates
   Coordinates destination(gripperPosition);  // copies the current position
-  if (command.has_x) destination.x = command.move_x;
-  if (command.has_y) destination.y = command.move_y;
-  if (command.has_z) destination.z = command.move_z;
+  if (command.has_x) destination.x = command.x;
+  if (command.has_y) destination.y = command.y;
+  if (command.has_z) destination.z = command.z;
   setCoordinates(destination);
 }
 
@@ -90,7 +97,7 @@ void stopAllMotors() {
 
 void setCoordinates(Coordinates destination) { 
   Serial.print("Going to ");
-  gripperPosition.println();
+  printCoordinates(gripperPosition);
 
   Angles newAngles = ArmIK::calculateAngles(destination);
   if (newAngles.isFailure()) {

@@ -8,6 +8,16 @@
 
 Angles ArmIK::failure = Angles(0, 0, 0);
 
+void printCoordinates(Coordinates coordinates) {
+	Serial.print("(");
+	Serial.print(coordinates.x);
+	Serial.print(", ");	
+	Serial.print(coordinates.y);
+	Serial.print(", ");	
+	Serial.print(coordinates.z);
+	Serial.println(").");
+}
+
 /// Computes the current position of the end-effector (hand).
 /// 
 /// We can do this using basic vector math: Treat all the arms as vectors and add them together 
@@ -15,20 +25,20 @@ Angles ArmIK::failure = Angles(0, 0, 0);
 /// need to translate k to x and y. We can do this by using [theta] and trig in the XY plane. 
 Coordinates ArmIK::calculatePosition(Angles angles) {
 	// First, get (k, z) by using vectors.
-	double absoluteC = angles.B - PI + angles.C;  // gets angle C relative to the X-axis
-	double k1 = a * cos(angles.B);
-	double z1 = a * sin(angles.B);
-	double k2 = b * cos(absoluteC);
-	double z2 = b * sin(absoluteC);
-	double z = z1 + z2;
-	double k = k1 + k2;
+	float absoluteC = angles.B - PI + angles.C;  // gets angle C relative to the X-axis
+	float k1 = a * cos(angles.B);
+	float z1 = a * sin(angles.B);
+	float k2 = b * cos(absoluteC);
+	float z2 = b * sin(absoluteC);
+	float z = z1 + z2;
+	float k = k1 + k2;
 
 	// Now we use k and theta to get x and y.
-	double y = k * sin(angles.theta);
-	double x = k * cos(angles.theta);
+	float y = k * sin(angles.theta);
+	float x = k * cos(angles.theta);
 
 	// Pack and return the values.
-	Coordinates result(x, y, z);
+	Coordinates result = {x: x, y: y, z: z};
 	return result; 
 }
 

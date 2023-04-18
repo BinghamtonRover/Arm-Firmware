@@ -9,6 +9,7 @@
 
 #include <Arduino.h>  // <-- includes math.h
 #include "constants.h"
+#include "../coordinates.pb.h"
 
 /// Defines the angles of the arm. 
 /// 
@@ -37,26 +38,7 @@ struct Angles {
 	}
 };
 
-/// Represents a position in 3D space. 
-struct Coordinates { 
-	double x, y, z; 
-
-	Coordinates() : x(0), y(0), z(0) { }
-	Coordinates(double x, double y, double z) : x(x), y(y), z(z) { }
-	Coordinates operator+(const Coordinates other) const { 
-		return Coordinates(x + other.x, y + other.y, z + other.z);
-	}
-
-	void println() {
-		Serial.print("(");
-		Serial.print(x);
-		Serial.print(", ");	
-		Serial.print(y);
-		Serial.print(", ");	
-		Serial.print(z);
-		Serial.println(").");
-	}
-};
+void printCoordinates(Coordinates coordinates);
 
 /// A helper class to handle inverse kinematics calculations for the robot arm. 
 /// 

@@ -11,9 +11,16 @@ void handleCommand(const uint8_t* data, int length) {
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
   if (command.stop) stopAllMotors();
   if (command.calibrate) calibrateAllMotors();
-  if (command.move_lift != 0) lift.debugMoveBySteps(command.move_lift);
-  if (command.move_rotate != 0) rotate.debugMoveBySteps(command.move_rotate);
-  if (command.move_gripper != 0) pinch.debugMoveBySteps(command.move_gripper);
+
+  // Move by steps
+  if (command.move_lift_steps != 0) lift.debugMoveBySteps(command.move_lift_steps);
+  if (command.move_rotate_steps != 0) rotate.debugMoveBySteps(command.move_rotate_steps);
+  if (command.move_pinch_steps != 0) pinch.debugMoveBySteps(command.move_pinch_steps);
+
+  // Move by steps
+  if (command.move_lift_radians != 0) lift.moveBy(command.move_lift_radians);
+  if (command.move_rotate_radians != 0) rotate.moveBy(command.move_rotate_radians);
+  if (command.move_pinch_radians != 0) pinch.moveBy(command.move_pinch_radians);
 }
 
 BurtCan can(GRIPPER_COMMAND_ID, handleCommand);
