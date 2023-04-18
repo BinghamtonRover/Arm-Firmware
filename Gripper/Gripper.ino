@@ -11,9 +11,9 @@ void handleCommand(const uint8_t* data, int length) {
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
   if (command.stop) stopAllMotors();
   if (command.calibrate) calibrateAllMotors();
-  if (command.move_lift != 0) wristLift.debugMoveBySteps(command.move_lift * LIFT_INCREMENT);
-  if (command.move_rotate != 0) wristRotate.debugMoveBySteps(command.move_rotate * ROTATE_INCREMENT);
-  if (command.move_gripper != 0) gripper.debugMoveBySteps(command.move_gripper * GRIPPER_INCREMENT);
+  if (command.move_lift != 0) lift.debugMoveBySteps(command.move_lift);
+  if (command.move_rotate != 0) rotate.debugMoveBySteps(command.move_rotate);
+  if (command.move_gripper != 0) pinch.debugMoveBySteps(command.move_gripper);
 }
 
 BurtCan can(GRIPPER_COMMAND_ID, handleCommand);
@@ -80,10 +80,10 @@ void updateSerialMonitor() {
 	String motor = part1;
 	int steps = part2.toInt();
 
-	StepperMotor* m = &wristLift;
-	if (motor == "lift") m = &wristLift;
-	else if (motor == "rotate") m = &wristRotate;
-	else if (motor == "pinch") m = &gripper;
+	StepperMotor* m = &lift;
+	if (motor == "lift") m = &lift;
+	else if (motor == "rotate") m = &rotate;
+	else if (motor == "pinch") m = &pinch;
 	else {
 	  Serial.print("Cannot move motor: [");
 	  Serial.print(motor);
