@@ -24,8 +24,6 @@ struct Angles {
 	/// The angle between the humerus and the forearm (ie, the elbow joint)
 	double C;
 
-	Angles(double theta, double B, double C) : theta(theta), B(B), C(C) { }
-
 	bool isFailure() { return isnan(theta) || isnan(B) || isnan(C); }
 
 	void println() {
@@ -66,12 +64,10 @@ void printCoordinates(Coordinates coordinates);
 /// - This [paper](https://www.researchgate.net/publication/251743615_Triangulation_A_new_algorithm_for_Inverse_Kinematics) that explains a simple algorithm for inverse kinematics
 class ArmIK {
 	/// The length of the "humerus" (attached to the rover), in millimeters. 
-	// static constexpr double a = 724.8;  // real arm
-	static constexpr double a = 224.38;  // demo arm
+	static constexpr double a = 667.46;
 
 	/// The length of the "forearm" (attached to the gripper), in millimeters. 
-	// static constexpr double b = 525.8;  // real arm
-	static constexpr double b = 224.38;  // demo arm
+	static constexpr double b = 637.504;
 
 	/* Maximum error tolerance. 
 

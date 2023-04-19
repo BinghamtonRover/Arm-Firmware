@@ -25,21 +25,24 @@ void handleCommand(const uint8_t* buffer, int length) {
   if (command.calibrate) calibrateAllMotors();
 
   // Debug control: Move by individual steps
-  if (command.move_swivel_steps != 0) swivel.debugMoveBySteps(command.move_swivel_steps);
-  if (command.move_shoulder_steps != 0) shoulder.debugMoveBySteps(command.move_swivel_steps);
-  if (command.move_elbow_steps != 0) shoulder.debugMoveBySteps(command.move_elbow_steps); 
+  if (command.swivel.move_steps != 0) swivel.debugMoveBySteps(command.swivel.move_steps);
+  if (command.shoulder.move_steps != 0) shoulder.debugMoveBySteps(command.shoulder.move_steps);
+  if (command.elbow.move_steps != 0) elbow.debugMoveBySteps(command.elbow.move_steps);
 
   // Precise control: Move by radians
-  if (command.move_swivel_radians != 0) swivel.moveBy(command.move_swivel_radians);
-  if (command.move_shoulder_radians != 0) shoulder.moveBy(command.move_swivel_radians);
-  if (command.move_elbow_radians != 0) shoulder.moveBy(command.move_elbow_radians); 
+  if (command.swivel.move_radians != 0) swivel.moveBy(command.swivel.move_radians);
+  if (command.shoulder.move_radians != 0) shoulder.moveBy(command.shoulder.move_radians);
+  if (command.elbow.move_radians != 0) elbow.moveBy(command.elbow.move_radians);
 
   // IK control to move motors by coordinates
-  Coordinates destination(gripperPosition);  // copies the current position
-  if (command.has_x) destination.x = command.x;
-  if (command.has_y) destination.y = command.y;
-  if (command.has_z) destination.z = command.z;
-  setCoordinates(destination);
+  // Coordinates newPosition = {gripperPosition.x, gripperPosition.y, gripperPosition.z}
+  Coordinates newPosition;
+  if (command.ik_x != 0) newPosition.x = command.ik_x; 
+  if (command.ik_y != 0) newPosition.y = command.ik_y;
+  if (command.ik_z != 0) newPosition.z = command.ik_z;
+  setCoordinates(newPosition);
+
+  //if (command.jab) jab();
 }
 
 BurtCan can(ARM_COMMAND_ID, handleCommand);
@@ -67,7 +70,7 @@ void setup() {
   Serial.println("Calibrating motors...");
 	calibrateAllMotors();
 
-	Serial.println("Arm subsystem ready");
+	Serial.println("Arm subsystem ready");  
 }
 
 void loop() {
@@ -84,8 +87,8 @@ void loop() {
 
 void calibrateAllMotors() {
 	swivel.calibrate();
+  elbow.calibrate();
 	shoulder.calibrate();
-	elbow.calibrate();
   gripperPosition = calibratedPosition;
 }
 
@@ -97,21 +100,19 @@ void stopAllMotors() {
 
 void setCoordinates(Coordinates destination) { 
   Serial.print("Going to ");
-  printCoordinates(gripperPosition);
+  printCoordinates(destination);
 
   Angles newAngles = ArmIK::calculateAngles(destination);
-  if (newAngles.isFailure()) {
-  	Serial.println("IK Failed"); 
-  	return;
-  } else {
-	  Serial.print("IK finished: ");
-  	newAngles.println();
-  }
+  if (newAngles.isFailure()) return;
 
   swivel.moveTo(newAngles.theta);
   shoulder.moveTo(newAngles.B);
   elbow.moveTo(newAngles.C);
   gripperPosition = destination;
+}
+
+void jab() {
+  // TODO: Move the arm forward 
 }
 
 void updateSerialMonitor() {
@@ -132,9 +133,9 @@ void updateSerialMonitor() {
   // }
 
   String input = Serial.readString();
-  if (input == "calibrate") return calibrateAllMotors();
-  else if (input == "stop") return stopAllMotors();
-  
+
+  if (input == "calibrate\n") return calibrateAllMotors();
+  else if (input = "stop\n") return stopAllMotors();
 	int delimiter = input.indexOf(" ");
 	if (delimiter == -1) return;
 	int delimiter2 = input.indexOf(" ", delimiter + 1);
@@ -142,15 +143,7 @@ void updateSerialMonitor() {
 		float x = input.substring(0, delimiter).toFloat();
 		float y = input.substring(delimiter + 1, delimiter2).toFloat();
 		float z = input.substring(delimiter2).toFloat();
-		Serial.print("Moving to: (");
-			Serial.print(x); Serial.print(", ");
-			Serial.print(y); Serial.print(", ");
-			Serial.print(z); 
-		Serial.println(").");
-		gripperPosition.x = x;
-		gripperPosition.y = y;
-		gripperPosition.z = z;
-		setCoordinates(gripperPosition);
+		setCoordinates({x: x, y: y, z: z});
 		return;
 	}
 	String command = input.substring(0, delimiter);

@@ -18,22 +18,10 @@ PB_BIND(ArmData, ArmData, AUTO)
 PB_BIND(ArmCommand, ArmCommand, AUTO)
 
 
-PB_BIND(ArmData2, ArmData2, AUTO)
-
-
-PB_BIND(ArmCommand2, ArmCommand2, AUTO)
-
-
 PB_BIND(GripperData, GripperData, AUTO)
 
 
 PB_BIND(GripperCommand, GripperCommand, AUTO)
-
-
-PB_BIND(GripperData2, GripperData2, AUTO)
-
-
-PB_BIND(GripperCommand2, GripperCommand2, AUTO)
 
 
 
