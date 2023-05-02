@@ -6,7 +6,7 @@
 #include "pinouts.h"
 
 #define ARM_COMMAND_ID 0x23
-#define USE_SERIAL_MONITOR true
+#define USE_SERIAL_MONITOR false
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
 Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
@@ -46,7 +46,7 @@ void handleCommand(const uint8_t* buffer, int length) {
 }
 
 BurtCan can(ARM_COMMAND_ID, handleCommand);
-BurtSerial serial(handleCommand);
+BurtSerial serial(handleCommand, Device::Device_ARM);
 
 void setup() {
 	Serial.begin(9600);
@@ -87,8 +87,8 @@ void loop() {
 
 void calibrateAllMotors() {
 	swivel.calibrate();
+  shoulder.calibrate();
   elbow.calibrate();
-	shoulder.calibrate();
   gripperPosition = calibratedPosition;
 }
 
