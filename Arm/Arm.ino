@@ -19,6 +19,10 @@ Coordinates gripperPosition;
 
 void handleCommand(const uint8_t* buffer, int length) {
   auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
+  Serial.print("Received command: Calibrate=");
+  Serial.print(command.calibrate);
+  Serial.print(", swivel=");
+  Serial.println(command.swivel.move_steps);
 
   // General commands
   if (command.stop) stopAllMotors();
@@ -67,8 +71,8 @@ void setup() {
 	shoulder.setup();
 	elbow.setup();
 
-  Serial.println("Calibrating motors...");
-	calibrateAllMotors();
+  // Serial.println("Calibrating motors...");
+	// calibrateAllMotors();
 
 	Serial.println("Arm subsystem ready");  
 }
@@ -134,8 +138,8 @@ void updateSerialMonitor() {
 
   String input = Serial.readString();
 
-  if (input == "calibrate\n") return calibrateAllMotors();
-  else if (input = "stop\n") return stopAllMotors();
+  // if (input == "calibrate\n") return calibrateAllMotors();
+  // else if (input = "stop\n") return stopAllMotors();
 	int delimiter = input.indexOf(" ");
 	if (delimiter == -1) return;
 	int delimiter2 = input.indexOf(" ", delimiter + 1);
@@ -150,6 +154,7 @@ void updateSerialMonitor() {
 	float arg = input.substring(delimiter + 1).toFloat();
 
 	if (command == "swivel") {
+    Serial.println("Doing something");
     swivel.moveTo(arg);
 	} else if (command == "shoulder") {
     shoulder.moveTo(arg);

@@ -5,26 +5,41 @@
 #include "pinouts.h"
 
 #define GRIPPER_COMMAND_ID 0x33
-#define USE_SERIAL_MONITOR true
+#define USE_SERIAL_MONITOR false
 
 void handleCommand(const uint8_t* data, int length) {
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
   if (command.stop) stopAllMotors();
   if (command.calibrate) calibrateAllMotors();
 
-  // Move by steps
-  if (command.move_lift_steps != 0) lift.debugMoveBySteps(command.move_lift_steps);
-  if (command.move_rotate_steps != 0) rotate.debugMoveBySteps(command.move_rotate_steps);
-  if (command.move_pinch_steps != 0) pinch.debugMoveBySteps(command.move_pinch_steps);
+  // Debug control: Move by individual steps
+  if (command.lift.move_steps != 0) lift.debugMoveBySteps(command.lift.move_steps);
+  if (command.rotate.move_steps != 0) rotate.debugMoveBySteps(command.rotate.move_steps);
+  if (command.pinch.move_steps != 0) pinch.debugMoveBySteps(command.pinch.move_steps);
 
-  // Move by steps
-  if (command.move_lift_radians != 0) lift.moveBy(command.move_lift_radians);
-  if (command.move_rotate_radians != 0) rotate.moveBy(command.move_rotate_radians);
-  if (command.move_pinch_radians != 0) pinch.moveBy(command.move_pinch_radians);
+  // Normal control: Move by radians
+  if (command.lift.move_radians != 0) {
+  	Serial.print("Moving lift by ");
+  	Serial.print(command.lift.move_radians);
+  	Serial.println(" radians");
+  	lift.moveBy(command.lift.move_radians);
+  }
+  if (command.rotate.move_radians != 0) {
+  	Serial.print("Moving rotate by ");
+  	Serial.print(command.rotate.move_radians);
+  	Serial.println(" radians");
+  	rotate.moveBy(command.rotate.move_radians);
+  }
+  if (command.pinch.move_radians != 0) {
+  	Serial.print("Moving pinch by ");
+  	Serial.print(command.pinch.move_radians);
+  	Serial.println(" radians");
+  	pinch.moveBy(command.pinch.move_radians);
+  }
 }
 
 BurtCan can(GRIPPER_COMMAND_ID, handleCommand);
-BurtSerial serial(handleCommand);
+BurtSerial serial(handleCommand, Device::Device_GRIPPER);
 
 void setup() {
 	Serial.begin(9600);
@@ -45,8 +60,8 @@ void setup() {
 	rotate.setup();
 	pinch.setup();
 
-  Serial.println("Calibrating motors...");
-	calibrateAllMotors();
+  // Serial.println("Calibrating motors...");
+	// calibrateAllMotors();
 
 	Serial.println("Gripper subsystem ready");
 }
@@ -97,5 +112,5 @@ void updateSerialMonitor() {
 	  Serial.println("].");
 	}
 
-	m->debugMoveToStep(steps); 
+	m->debugMoveBySteps(steps); 
 }

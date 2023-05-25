@@ -69,8 +69,11 @@ typedef struct _ArmCommand {
  stationary. See /Arm/src/ik/README.md in the Arm-Firmware repository. */
     bool has_gripper_lift;
     MotorCommand gripper_lift;
-    bool has_ik_target;
-    Coordinates ik_target;
+    float ik_x;
+    float ik_y;
+    float ik_z;
+    /* Custom actions */
+    bool jab;
 } ArmCommand;
 
 typedef struct _GripperData {
@@ -93,6 +96,10 @@ typedef struct _GripperCommand {
     MotorCommand rotate;
     bool has_pinch;
     MotorCommand pinch;
+    /* Custom actions */
+    bool open;
+    bool close;
+    bool spin;
 } GripperCommand;
 
 
@@ -117,15 +124,15 @@ extern "C" {
 #define MotorData_init_default                   {0, 0, _MotorDirection_MIN, 0, 0, 0}
 #define MotorCommand_init_default                {0, 0}
 #define ArmData_init_default                     {false, Coordinates_init_default, false, Coordinates_init_default, false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default}
-#define ArmCommand_init_default                  {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, false, Coordinates_init_default}
+#define ArmCommand_init_default                  {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0, 0}
 #define GripperData_init_default                 {false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default}
-#define GripperCommand_init_default              {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default}
+#define GripperCommand_init_default              {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0}
 #define MotorData_init_zero                      {0, 0, _MotorDirection_MIN, 0, 0, 0}
 #define MotorCommand_init_zero                   {0, 0}
 #define ArmData_init_zero                        {false, Coordinates_init_zero, false, Coordinates_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero}
-#define ArmCommand_init_zero                     {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, Coordinates_init_zero}
+#define ArmCommand_init_zero                     {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, 0, 0, 0, 0}
 #define GripperData_init_zero                    {false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero}
-#define GripperCommand_init_zero                 {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero}
+#define GripperCommand_init_zero                 {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, 0, 0, 0}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define MotorData_is_moving_tag                  1
@@ -147,7 +154,10 @@ extern "C" {
 #define ArmCommand_shoulder_tag                  4
 #define ArmCommand_elbow_tag                     5
 #define ArmCommand_gripper_lift_tag              6
-#define ArmCommand_ik_target_tag                 7
+#define ArmCommand_ik_x_tag                      7
+#define ArmCommand_ik_y_tag                      8
+#define ArmCommand_ik_z_tag                      9
+#define ArmCommand_jab_tag                       10
 #define GripperData_lift_tag                     1
 #define GripperData_rotate_tag                   2
 #define GripperData_pinch_tag                    3
@@ -156,6 +166,9 @@ extern "C" {
 #define GripperCommand_lift_tag                  3
 #define GripperCommand_rotate_tag                4
 #define GripperCommand_pinch_tag                 5
+#define GripperCommand_open_tag                  6
+#define GripperCommand_close_tag                 7
+#define GripperCommand_spin_tag                  8
 
 /* Struct field encoding specification for nanopb */
 #define MotorData_FIELDLIST(X, a) \
@@ -195,14 +208,16 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  swivel,            3) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  shoulder,          4) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  elbow,             5) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  gripper_lift,      6) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  ik_target,         7)
+X(a, STATIC,   SINGULAR, FLOAT,    ik_x,              7) \
+X(a, STATIC,   SINGULAR, FLOAT,    ik_y,              8) \
+X(a, STATIC,   SINGULAR, FLOAT,    ik_z,              9) \
+X(a, STATIC,   SINGULAR, BOOL,     jab,              10)
 #define ArmCommand_CALLBACK NULL
 #define ArmCommand_DEFAULT NULL
 #define ArmCommand_swivel_MSGTYPE MotorCommand
 #define ArmCommand_shoulder_MSGTYPE MotorCommand
 #define ArmCommand_elbow_MSGTYPE MotorCommand
 #define ArmCommand_gripper_lift_MSGTYPE MotorCommand
-#define ArmCommand_ik_target_MSGTYPE Coordinates
 
 #define GripperData_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  lift,              1) \
@@ -219,7 +234,10 @@ X(a, STATIC,   SINGULAR, BOOL,     stop,              1) \
 X(a, STATIC,   SINGULAR, BOOL,     calibrate,         2) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  lift,              3) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  rotate,            4) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  pinch,             5)
+X(a, STATIC,   OPTIONAL, MESSAGE,  pinch,             5) \
+X(a, STATIC,   SINGULAR, BOOL,     open,              6) \
+X(a, STATIC,   SINGULAR, BOOL,     close,             7) \
+X(a, STATIC,   SINGULAR, BOOL,     spin,              8)
 #define GripperCommand_CALLBACK NULL
 #define GripperCommand_DEFAULT NULL
 #define GripperCommand_lift_MSGTYPE MotorCommand
@@ -244,7 +262,7 @@ extern const pb_msgdesc_t GripperCommand_msg;
 /* Maximum encoded size of messages (where known) */
 #define ArmCommand_size                          93
 #define ArmData_size                             139
-#define GripperCommand_size                      58
+#define GripperCommand_size                      64
 #define GripperData_size                         105
 #define MotorCommand_size                        16
 #define MotorData_size                           33
