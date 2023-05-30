@@ -5,7 +5,11 @@
 #include "pinouts.h"
 
 #define GRIPPER_COMMAND_ID 0x33
+#define GRIPPER_DATA_ID 0x16
+#define DATA_SEND_INTERVAL 1000
 #define USE_SERIAL_MONITOR false
+
+unsigned long nextSendTime;
 
 void handleCommand(const uint8_t* data, int length) {
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
@@ -47,6 +51,7 @@ void setup() {
 
   Serial.print("Initializing CAN...");
 	can.setup();
+  nextSendTime = millis() + DATA_SEND_INTERVAL;
   Serial.println("Done!");
 
   Serial.print("Preparing motors... ");
@@ -71,11 +76,55 @@ void loop() {
 	can.update();
 	if (USE_SERIAL_MONITOR) updateSerialMonitor();
 	else serial.update();
+  sendData();
 
 	// Update motors
 	lift.update();
 	rotate.update();
 	pinch.update();
+}
+
+void sendMotorData(GripperData gripper, StepperMotor& motor, MotorData* pointer) {
+  MotorData data;
+
+  data = MotorData_init_zero;
+  data.is_moving = motor.isMoving();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.is_limit_switch_pressed = motor.isLimitSwitchPressed();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.current_step = motor.driver.XACTUAL();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.target_step = motor.driver.XTARGET();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.angle = motor.angle;
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+}
+
+/* TODO: Send IK data */
+void sendData() {
+  if (millis() < nextSendTime) return;
+
+  GripperData gripper = GripperData_init_zero;
+  sendMotorData(gripper, lift, &gripper.lift);
+  gripper = GripperData_init_zero;
+  sendMotorData(gripper, rotate, &gripper.rotate);
+  gripper = GripperData_init_zero;
+  sendMotorData(gripper, pinch, &gripper.pinch);
+
+  nextSendTime = millis() + DATA_SEND_INTERVAL;
 }
 
 void calibrateAllMotors() {

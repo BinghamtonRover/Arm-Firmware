@@ -6,6 +6,8 @@
 #include "pinouts.h"
 
 #define ARM_COMMAND_ID 0x23
+#define ARM_DATA_ID 0x15
+#define DATA_SEND_INTERVAL 1000
 #define USE_SERIAL_MONITOR false
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
@@ -16,6 +18,8 @@ Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
 /// These coordinates are passed to the IK algorithms which return angles for the 
 /// joints of the arm: [swivel], [shoulder], and [elbow]. 
 Coordinates gripperPosition;
+
+unsigned long nextSendTime;
 
 void handleCommand(const uint8_t* buffer, int length) {
   auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
@@ -58,6 +62,7 @@ void setup() {
 
   Serial.print("Initializing CAN...");
 	can.setup();
+  nextSendTime = millis() + DATA_SEND_INTERVAL;
   Serial.println("Done!");
 
   Serial.print("Preparing motors... ");
@@ -82,11 +87,55 @@ void loop() {
   can.update();
   if (USE_SERIAL_MONITOR) updateSerialMonitor();
   else serial.update();
+  sendData();
 
   // Update motors
   swivel.update();
   shoulder.update();
   elbow.update();
+}
+
+void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
+  MotorData data;
+
+  data = MotorData_init_zero;
+  data.is_moving = motor.isMoving();
+  *pointer = data;
+  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+
+  data = MotorData_init_zero;
+  data.is_limit_switch_pressed = motor.isLimitSwitchPressed();
+  *pointer = data;
+  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+
+  data = MotorData_init_zero;
+  data.current_step = motor.driver.XACTUAL();
+  *pointer = data;
+  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+
+  data = MotorData_init_zero;
+  data.target_step = motor.driver.XTARGET();
+  *pointer = data;
+  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+
+  data = MotorData_init_zero;
+  data.angle = motor.angle;
+  *pointer = data;
+  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+}
+
+/* TODO: Send IK data */
+void sendData() {
+  if (millis() < nextSendTime) return;
+
+  ArmData arm = ArmData_init_zero;
+  sendMotorData(arm, swivel, &arm.base);
+  arm = ArmData_init_zero;
+  sendMotorData(arm, shoulder, &arm.shoulder);
+  arm = ArmData_init_zero;
+  sendMotorData(arm, elbow, &arm.elbow);
+
+  nextSendTime = millis() + DATA_SEND_INTERVAL;
 }
 
 void calibrateAllMotors() {
@@ -121,25 +170,8 @@ void jab() {
 
 void updateSerialMonitor() {
 	if (!Serial.available()) return;
-	
-  // Assuming max size of 4 arguments, feel free to change
-  // String args[4] = {"", "", "", ""};
-  // int index = 0;
-  // while (Serial.available()) {
-  // 	char character = Serial.read();
-  // 	if (character == ' ') index++;
-  // 	if (index == 4) {
-  // 		Serial.println("Use 4 or less arguments");
-  // 		Serial.readString();  // clear the rest of the buffer
-  // 		return;
-  // 	}
-  // 	args[index].concat(character);
-  // }
 
   String input = Serial.readString();
-
-  // if (input == "calibrate\n") return calibrateAllMotors();
-  // else if (input = "stop\n") return stopAllMotors();
 	int delimiter = input.indexOf(" ");
 	if (delimiter == -1) return;
 	int delimiter2 = input.indexOf(" ", delimiter + 1);
