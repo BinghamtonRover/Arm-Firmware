@@ -21,34 +21,7 @@
 
 unsigned long nextSendTime;
 
-void handleCommand(const uint8_t* buffer, int length) {
-  auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
-  Serial.print("Received command: Calibrate=");
-  Serial.print(command.calibrate);
-  Serial.print(", swivel=");
-  Serial.println(command.swivel.move_steps);
-
-  // General commands
-  if (command.stop) stopAllMotors();
-  if (command.calibrate) calibrateAllMotors();
-
-  // Debug control: Move by individual steps
-  if (command.swivel.move_steps != 0) swivel.moveBySteps(command.swivel.move_steps);
-  if (command.shoulder.move_steps != 0) shoulder.moveBySteps(command.shoulder.move_steps);
-  if (command.elbow.move_steps != 0) elbow.moveBySteps(command.elbow.move_steps);
-
-  // Precise control: Move by radians
-  if (command.swivel.move_radians != 0) swivel.moveBy(command.swivel.move_radians);
-  if (command.shoulder.move_radians != 0) shoulder.moveBy(command.shoulder.move_radians);
-  if (command.elbow.move_radians != 0) elbow.moveBy(command.elbow.move_radians);
-
-  // IK control to move motors by coordinates
-  // Coordinates newPosition = {gripperPosition.x, gripperPosition.y, gripperPosition.z}
-  // if (command.ik_x != 0) newPosition.x = command.ik_x; 
-  // if (command.ik_y != 0) newPosition.y = command.ik_y;
-  // if (command.ik_z != 0) newPosition.z = command.ik_z;
-  // setCoordinates(newPosition);
-}
+void handleCommand(const uint8_t* buffer, int length);
 
 BurtCan can(ARM_COMMAND_ID, handleCommand);
 BurtSerial serial(handleCommand, Device::Device_ARM);
@@ -195,4 +168,33 @@ void updateSerialMonitor() {
 	else if (command == "precise-elbow") elbow.moveBySteps(arg);
 	else if (command == "precise-shoulder") shoulder.moveBySteps(arg);
   else Serial.println("Unrecognized command");
+}
+
+void handleCommand(const uint8_t* buffer, int length) {
+  auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
+  Serial.print("Received command: Calibrate=");
+  Serial.print(command.calibrate);
+  Serial.print(", swivel=");
+  Serial.println(command.swivel.move_steps);
+
+  // General commands
+  if (command.stop) stopAllMotors();
+  if (command.calibrate) calibrateAllMotors();
+
+  // Debug control: Move by individual steps
+  if (command.swivel.move_steps != 0) swivel.moveBySteps(command.swivel.move_steps);
+  if (command.shoulder.move_steps != 0) shoulder.moveBySteps(command.shoulder.move_steps);
+  if (command.elbow.move_steps != 0) elbow.moveBySteps(command.elbow.move_steps);
+
+  // Precise control: Move by radians
+  if (command.swivel.move_radians != 0) swivel.moveBy(command.swivel.move_radians);
+  if (command.shoulder.move_radians != 0) shoulder.moveBy(command.shoulder.move_radians);
+  if (command.elbow.move_radians != 0) elbow.moveBy(command.elbow.move_radians);
+
+  // IK control to move motors by coordinates
+  // Coordinates newPosition = {gripperPosition.x, gripperPosition.y, gripperPosition.z}
+  // if (command.ik_x != 0) newPosition.x = command.ik_x; 
+  // if (command.ik_y != 0) newPosition.y = command.ik_y;
+  // if (command.ik_z != 0) newPosition.z = command.ik_z;
+  // setCoordinates(newPosition);
 }
