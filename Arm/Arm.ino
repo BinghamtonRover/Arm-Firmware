@@ -33,9 +33,9 @@ void handleCommand(const uint8_t* buffer, int length) {
   if (command.calibrate) calibrateAllMotors();
 
   // Debug control: Move by individual steps
-  if (command.swivel.move_steps != 0) swivel.debugMoveBySteps(command.swivel.move_steps);
-  if (command.shoulder.move_steps != 0) shoulder.debugMoveBySteps(command.shoulder.move_steps);
-  if (command.elbow.move_steps != 0) elbow.debugMoveBySteps(command.elbow.move_steps);
+  if (command.swivel.move_steps != 0) swivel.moveBySteps(command.swivel.move_steps);
+  if (command.shoulder.move_steps != 0) shoulder.moveBySteps(command.shoulder.move_steps);
+  if (command.elbow.move_steps != 0) elbow.moveBySteps(command.elbow.move_steps);
 
   // Precise control: Move by radians
   if (command.swivel.move_radians != 0) swivel.moveBy(command.swivel.move_radians);
@@ -107,17 +107,17 @@ void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
   can.send(ARM_DATA_ID, &arm, ArmData_fields);
 
   data = MotorData_init_zero;
-  data.current_step = motor.driver.XACTUAL();
+  data.current_step = motor.getPosition();
   *pointer = data;
   can.send(ARM_DATA_ID, &arm, ArmData_fields);
 
   data = MotorData_init_zero;
-  data.target_step = motor.driver.XTARGET();
+  data.target_step = motor.getPosition();
   *pointer = data;
   can.send(ARM_DATA_ID, &arm, ArmData_fields);
 
   data = MotorData_init_zero;
-  data.angle = motor.angle;
+  data.angle = motor.getPosition();
   *pointer = data;
   can.send(ARM_DATA_ID, &arm, ArmData_fields);
 }
@@ -190,8 +190,8 @@ void updateSerialMonitor() {
     shoulder.moveTo(arg);
 	} else if (command == "elbow") {
     elbow.moveTo(arg);
-	} else if (command == "precise-swivel") swivel.debugMoveBySteps(arg);
-	else if (command == "precise-elbow") elbow.debugMoveBySteps(arg);
-	else if (command == "precise-shoulder") shoulder.debugMoveBySteps(arg);
+	} else if (command == "precise-swivel") swivel.moveBySteps(arg);
+	else if (command == "precise-elbow") elbow.moveBySteps(arg);
+	else if (command == "precise-shoulder") shoulder.moveBySteps(arg);
   else Serial.println("Unrecognized command");
 }
