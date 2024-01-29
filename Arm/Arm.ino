@@ -49,8 +49,6 @@ void handleCommand(const uint8_t* buffer, int length) {
   if (command.ik_y != 0) newPosition.y = command.ik_y;
   if (command.ik_z != 0) newPosition.z = command.ik_z;
   setCoordinates(newPosition);
-
-  //if (command.jab) jab();
 }
 
 BurtCan can(ARM_COMMAND_ID, handleCommand);
