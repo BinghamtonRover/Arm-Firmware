@@ -11,13 +11,13 @@
 #define USE_SERIAL_MONITOR false
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
-Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
+// Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
 
 /// The (x, y, z) coordinates of the gripper. 
 ///
 /// These coordinates are passed to the IK algorithms which return angles for the 
 /// joints of the arm: [swivel], [shoulder], and [elbow]. 
-Coordinates gripperPosition;
+// Coordinates gripperPosition;
 
 unsigned long nextSendTime;
 
@@ -44,11 +44,10 @@ void handleCommand(const uint8_t* buffer, int length) {
 
   // IK control to move motors by coordinates
   // Coordinates newPosition = {gripperPosition.x, gripperPosition.y, gripperPosition.z}
-  Coordinates newPosition;
-  if (command.ik_x != 0) newPosition.x = command.ik_x; 
-  if (command.ik_y != 0) newPosition.y = command.ik_y;
-  if (command.ik_z != 0) newPosition.z = command.ik_z;
-  setCoordinates(newPosition);
+  // if (command.ik_x != 0) newPosition.x = command.ik_x; 
+  // if (command.ik_y != 0) newPosition.y = command.ik_y;
+  // if (command.ik_z != 0) newPosition.z = command.ik_z;
+  // setCoordinates(newPosition);
 }
 
 BurtCan can(ARM_COMMAND_ID, handleCommand);
@@ -93,8 +92,10 @@ void loop() {
   elbow.update();
 }
 
+// TODO: Validate this sends only 8 bytes
 void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
   MotorData data;
+  ArmData arm;
 
   data = MotorData_init_zero;
   data.is_moving = motor.isMoving();
@@ -140,7 +141,7 @@ void calibrateAllMotors() {
 	swivel.calibrate();
   shoulder.calibrate();
   elbow.calibrate();
-  gripperPosition = calibratedPosition;
+  // gripperPosition = calibratedPosition;
 }
 
 void stopAllMotors() {
@@ -149,22 +150,22 @@ void stopAllMotors() {
   elbow.stop();
 }
 
-void setCoordinates(Coordinates destination) { 
-  Serial.print("Going to ");
-  printCoordinates(destination);
+// void setCoordinates(Coordinates destination) { 
+//   Serial.print("Going to ");
+//   printCoordinates(destination);
 
-  Angles newAngles = ArmIK::calculateAngles(destination);
-  if (newAngles.isFailure()) return;
+//   Angles newAngles = ArmIK::calculateAngles(destination);
+//   if (newAngles.isFailure()) return;
 
-  swivel.moveTo(newAngles.theta);
-  shoulder.moveTo(newAngles.B);
-  elbow.moveTo(newAngles.C);
-  gripperPosition = destination;
-}
+//   swivel.moveTo(newAngles.theta);
+//   shoulder.moveTo(newAngles.B);
+//   elbow.moveTo(newAngles.C);
+//   gripperPosition = destination;
+// }
 
-void jab() {
-  // TODO: Move the arm forward 
-}
+// void jab() {
+//   // TODO: Move the arm forward 
+// }
 
 void updateSerialMonitor() {
 	if (!Serial.available()) return;
@@ -173,13 +174,13 @@ void updateSerialMonitor() {
 	int delimiter = input.indexOf(" ");
 	if (delimiter == -1) return;
 	int delimiter2 = input.indexOf(" ", delimiter + 1);
-	if (delimiter2 != -1) {  // was given an x, y, z command
-		float x = input.substring(0, delimiter).toFloat();
-		float y = input.substring(delimiter + 1, delimiter2).toFloat();
-		float z = input.substring(delimiter2).toFloat();
-		setCoordinates({x: x, y: y, z: z});
-		return;
-	}
+	// if (delimiter2 != -1) {  // was given an x, y, z command
+	// 	float x = input.substring(0, delimiter).toFloat();
+	// 	float y = input.substring(delimiter + 1, delimiter2).toFloat();
+	// 	float z = input.substring(delimiter2).toFloat();
+	// 	setCoordinates({x: x, y: y, z: z});
+	// 	return;
+	// }
 	String command = input.substring(0, delimiter);
 	float arg = input.substring(delimiter + 1).toFloat();
 
