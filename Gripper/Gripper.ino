@@ -1,183 +1,165 @@
-#include <BURT_arm_constants.h>
-#include <BURT_arm_IK.h>
-#include <BURT_arm_motor.h>
-#include <BURT_can.h>
+#include "src/utils/BURT_utils.h"
+#include "src/tmc/BURT_TMC.h"
 
-/* TODO: 
- - handle gyroscope inputs
- - handle recoil
-*/
+#include "src/arm.pb.h"
+#include "pinouts.h"
 
-// Pinouts
+#define GRIPPER_COMMAND_ID 0x33
+#define GRIPPER_DATA_ID 0x16
+#define DATA_SEND_INTERVAL 1000
+#define USE_SERIAL_MONITOR false
 
-// Motor driver 2
-#define LIFT_EN_PIN 34
-#define LIFT_CS_PIN 37
-#define LIFT_LS_PIN 9
+unsigned long nextSendTime;
 
-// Motor driver 3
-#define GRIP_EN_PIN 40
-#define GRIP_CS_PIN 36
-#define GRIP_LS_PIN 8
+void handleCommand(const uint8_t* data, int length) {
+  auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
+  if (command.stop) stopAllMotors();
+  if (command.calibrate) calibrateAllMotors();
 
-// Limits for the joints, in terms of radians from their limit switches
-// DEMO: All joints are limited to +- 30 degrees. Because we check from the 
-// limit switches, this means the limits are [0, 60] degrees, or [0, pi/3] rad
-#define LIFT_MIN 0
-#define LIFT_MAX PI
-#define LIFT_CURRENT 400
-#define LIFT_STEPS_PER_180 750000
-#define LIFT_SPEED 51200*2
-#define LIFT_ACCEL 51200*2
+  // Debug control: Move by individual steps
+  if (command.lift.move_steps != 0) lift.debugMoveBySteps(command.lift.move_steps);
+  if (command.rotate.move_steps != 0) rotate.debugMoveBySteps(command.rotate.move_steps);
+  if (command.pinch.move_steps != 0) pinch.debugMoveBySteps(command.pinch.move_steps);
 
-#define GRIP_MIN 0
-#define GRIP_MAX PI
-#define GRIP_CURRENT 800
-#define GRIP_STEPS_PER_180 750000
-#define GRIP_SPEED 51200*2
-#define GRIP_ACCEL 51200*2
-
-// When the joints are at their maximum angles, these are the coordinates of the gripper.
-#define CALIBRATED_X 0
-#define CALIBRATED_Y 366.420
-#define CALIBRATED_Z 1117.336
-
-// CanBus IDs
-#define DEMO_HANDLER_ID 1
-
-#define MAX_X 440
-#define MAX_Y 440
-#define MAX_Z 440
-#define MIN_RAD 0
-#define MAX_RAD PI
-
-#define DEBUG true
-
-/* The (x, y, z) coordinates of the gripper. 
-
- These coordinates are passed to the IK algorithms which return angles for the 
- joints of the arm, [swivel], [extend], and [lift]. 
-*/ 
-StepperMotor lift = StepperMotor(LIFT_CS_PIN, LIFT_EN_PIN, LIFT_LS_PIN, LIFT_CURRENT, LIFT_MIN, LIFT_MAX, LIFT_STEPS_PER_180, LIFT_SPEED, LIFT_ACCEL, "Lift");
-StepperMotor grip = StepperMotor(GRIP_CS_PIN, GRIP_EN_PIN, GRIP_LS_PIN, GRIP_CURRENT, GRIP_MIN, GRIP_MAX, GRIP_STEPS_PER_180, GRIP_SPEED, GRIP_ACCEL, "Grip");
-
-Angles zeroAngles(0, PI/2, PI);
-Coordinates origin, position;
-
-void demoHandler(const CanMessage& message) {
-	float data[8];
-	for (int index = 0; index < 8; index++) {
-		data[index] = message.buf[index] - 100;
-	}
-	float x = (data[0] / 100) * MAX_X;
-	float y = (data[1] / 100) * MAX_Y;
-	float z = (data[2] / 100) * MAX_Z;
-
-	// float 
-
-	Coordinates offset(x, y, z);
-	updatePosition(offset);
-
-	// Serial.println()
+  // Normal control: Move by radians
+  if (command.lift.move_radians != 0) {
+  	Serial.print("Moving lift by ");
+  	Serial.print(command.lift.move_radians);
+  	Serial.println(" radians");
+  	lift.moveBy(command.lift.move_radians);
+  }
+  if (command.rotate.move_radians != 0) {
+  	Serial.print("Moving rotate by ");
+  	Serial.print(command.rotate.move_radians);
+  	Serial.println(" radians");
+  	rotate.moveBy(command.rotate.move_radians);
+  }
+  if (command.pinch.move_radians != 0) {
+  	Serial.print("Moving pinch by ");
+  	Serial.print(command.pinch.move_radians);
+  	Serial.println(" radians");
+  	pinch.moveBy(command.pinch.move_radians);
+  }
 }
+
+BurtCan can(GRIPPER_COMMAND_ID, handleCommand);
+BurtSerial serial(handleCommand, Device::Device_GRIPPER);
 
 void setup() {
 	Serial.begin(9600);
-	
-	pinMode(LIFT_CS_PIN, OUTPUT);
-	digitalWrite(LIFT_CS_PIN, HIGH);
+	Serial.println("Initializing...");	
 
+  Serial.print("Initializing CAN...");
+	can.setup();
+  nextSendTime = millis() + DATA_SEND_INTERVAL;
+  Serial.println("Done!");
+
+  Serial.print("Preparing motors... ");
+	lift.presetup();
+	rotate.presetup();
+	pinch.presetup();
+  Serial.println("Done!");
+
+  Serial.println("Initializing motors...");
 	lift.setup();
-	grip.setup();
-	Serial.println("Finished stepper motor initialization.");
+	rotate.setup();
+	pinch.setup();
 
-	BurtCan::setup();
-	BurtCan::registerHandler(DEMO_HANDLER_ID, demoHandler);
-	Serial.println("Finished CAN bus initialization.");
+  // Serial.println("Calibrating motors...");
+	// calibrateAllMotors();
 
-	origin = ArmIK::calculatePosition(zeroAngles);
-	position = origin;
-	Serial.print("Origin: ");
-	origin.print();
-
-
-	// CAN is not working. This is a simple "dance" code
-	// float destination = 0;
-	// int direction = 1;
-	// Serial.println("CAN is not working. Doing a dance routine instead.");
-	// while (true) {
-	// 	if (lift.isFinished()) {
-	// 		Serial.print("Moving to ");
-	// 		Serial.println(destination);
-	// 		lift.moveTo(destination);
-	// 		destination += PI * direction;
-	// 		direction *= -1;
-	// 	}
-	// 	delay(10);
-	// }
+	Serial.println("Gripper subsystem ready");
 }
 
 void loop() {
-	if (DEBUG) {
-		String input = Serial.readString();
-		parseSerialCommand(input);
-	}
+	// Update communications
+	can.update();
+	if (USE_SERIAL_MONITOR) updateSerialMonitor();
+	else serial.update();
+  sendData();
 
-	// CAN is not working on the gripper board. See [setup].
-	BurtCan::update();
+	// Update motors
+	lift.update();
+	rotate.update();
+	pinch.update();
 }
 
-/// Updates the (x, y, z) coordinates of the gripper, provided it is safe.
-void updatePosition(Coordinates offset) {
-	Coordinates destination = origin + offset;
-	Serial.print("\nTrying to go to: ");
-	destination.print();
-	Angles newAngles = ArmIK::calculateAngles(destination);
-	if (newAngles.isFailure()) {
-		Serial.println("IK failed -- Ignoring.");
-		return;
-	}
-	Serial.print("IK finished: ");
-	newAngles.print();
-	lift.moveTo(newAngles.C - (PI/2));
-	position = destination;
+void sendMotorData(GripperData gripper, StepperMotor& motor, MotorData* pointer) {
+  MotorData data;
+
+  data = MotorData_init_zero;
+  data.is_moving = motor.isMoving();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.is_limit_switch_pressed = motor.isLimitSwitchPressed();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.current_step = motor.driver.XACTUAL();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.target_step = motor.driver.XTARGET();
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+
+  data = MotorData_init_zero;
+  data.angle = motor.angle;
+  *pointer = data;
+  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
 }
 
-void parseSerialCommand(String input) {
-	// Supported commands: 
-	// 	x y z: move to origin + (x, y, z)
-	// 	reset: move to origin
-	// 	debug-lift n: lift to n steps 
-	// 	debug-rotate n: rotate to n steps 
-	// 	precise-lift: lift by n radians (without IK)
-	// 	precise-rotate: rotate by n radians (without IK)
+/* TODO: Send IK data */
+void sendData() {
+  if (millis() < nextSendTime) return;
 
+  GripperData gripper = GripperData_init_zero;
+  sendMotorData(gripper, lift, &gripper.lift);
+  gripper = GripperData_init_zero;
+  sendMotorData(gripper, rotate, &gripper.rotate);
+  gripper = GripperData_init_zero;
+  sendMotorData(gripper, pinch, &gripper.pinch);
+
+  nextSendTime = millis() + DATA_SEND_INTERVAL;
+}
+
+void calibrateAllMotors() {
+	lift.calibrate();
+	rotate.calibrate();
+	pinch.calibrate();
+}
+
+void stopAllMotors() {
+  lift.stop();
+  rotate.stop();
+  pinch.stop();
+}
+
+void updateSerialMonitor() {
+	String input = Serial.readString();
 	if (input == "") return;
-	Serial.println("User inputted: " + input);
 
-	// Parse "x y z" command
+	// Parse the command
 	int delimiter = input.indexOf(" ");
 	if (delimiter == -1) return;
-	int delimiter2 = input.indexOf(" ", delimiter + 1);
-	if (delimiter2 != -1) {  // was given an x, y, z command
-		float x = input.substring(0, delimiter).toFloat();
-		float y = input.substring(delimiter + 1, delimiter2).toFloat();
-		float z = input.substring(delimiter2).toFloat();
-		Coordinates destination(x, y, z);
-		updatePosition(destination);
-		return;
-	}
-	// Parse commands of the form "command n"
-	String command = input.substring(0, delimiter);
-	float arg = input.substring(delimiter + 1).toFloat();
+	String part1 = input.substring(0, delimiter);
+	String part2 = input.substring(delimiter + 1);
+	String motor = part1;
+	int steps = part2.toInt();
 
-	if (command == "precise-lift") {
-		lift.moveTo(arg);
-	} else if (command == "debug-lift") { 
-		lift.debugMoveToStep(arg); 
-	} else if (command == "debug-grip") {
-		grip.debugMoveToStep(arg);
-	} else if (command == "reset") {
-		updatePosition(Coordinates());
-	} else Serial.println("Unrecognized command");
+	StepperMotor* m = &lift;
+	if (motor == "lift") m = &lift;
+	else if (motor == "rotate") m = &rotate;
+	else if (motor == "pinch") m = &pinch;
+	else {
+	  Serial.print("Cannot move motor: [");
+	  Serial.print(motor);
+	  Serial.println("].");
+	}
+
+	m->debugMoveBySteps(steps); 
 }
