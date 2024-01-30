@@ -16,7 +16,7 @@ StepperMotorConfig swivelConfig = {
 	minLimit: -INFINITY,  // 0,
 	maxLimit: INFINITY,  // 2*PI,
 	isPositive: true,
-	gearboxRatio: 5,
+	gearboxRatio: 47,
 };
 
 LimitSwitch swivelLimit;
@@ -42,7 +42,7 @@ StepperMotorConfig shoulderConfig = {
 };
 
 LimitSwitch shoulderLimit = {
-	pin: 8,
+	pin: -1,  // 8
 	triggeredValue: HIGH,
 	direction: -1,
 	position: 0,
@@ -69,7 +69,7 @@ StepperMotorConfig elbowConfig = {
 };
 
 LimitSwitch elbowLimit = {
-	pin: 9,
+	pin: -1,  // 9
 	direction: -1,
 	position: PI / 4,
 };

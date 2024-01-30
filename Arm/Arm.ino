@@ -68,7 +68,6 @@ void loop() {
 // TODO: Validate this sends only 8 bytes
 void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
   MotorData data;
-  ArmData arm;
 
   data = MotorData_init_zero;
   data.is_moving = motor.isMoving();
@@ -146,7 +145,7 @@ void updateSerialMonitor() {
   String input = Serial.readString();
 	int delimiter = input.indexOf(" ");
 	if (delimiter == -1) return;
-	int delimiter2 = input.indexOf(" ", delimiter + 1);
+	// int delimiter2 = input.indexOf(" ", delimiter + 1);
 	// if (delimiter2 != -1) {  // was given an x, y, z command
 	// 	float x = input.substring(0, delimiter).toFloat();
 	// 	float y = input.substring(delimiter + 1, delimiter2).toFloat();
