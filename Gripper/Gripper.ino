@@ -17,9 +17,15 @@ void handleCommand(const uint8_t* data, int length) {
   if (command.calibrate) calibrateAllMotors();
 
   // Debug control: Move by individual steps
-  if (command.lift.move_steps != 0) lift.debugMoveBySteps(command.lift.move_steps);
-  if (command.rotate.move_steps != 0) rotate.debugMoveBySteps(command.rotate.move_steps);
-  if (command.pinch.move_steps != 0) pinch.debugMoveBySteps(command.pinch.move_steps);
+  if (command.lift.move_steps != 0) {
+    lift.moveBySteps(command.lift.move_steps);
+    rotate.moveBySteps(command.lift.move_steps);
+  }
+  if (command.rotate.move_steps != 0) {
+    lift.moveBySteps(-command.rotate.move_steps);
+    rotate.moveBySteps(command.rotate.move_steps);
+  }
+  if (command.pinch.move_steps != 0) pinch.moveBySteps(command.pinch.move_steps);
 
   // Normal control: Move by radians
   if (command.lift.move_radians != 0) {
@@ -27,11 +33,13 @@ void handleCommand(const uint8_t* data, int length) {
   	Serial.print(command.lift.move_radians);
   	Serial.println(" radians");
   	lift.moveBy(command.lift.move_radians);
+    rotate.moveBy(command.lift.move_radians);
   }
   if (command.rotate.move_radians != 0) {
   	Serial.print("Moving rotate by ");
   	Serial.print(command.rotate.move_radians);
   	Serial.println(" radians");
+  	lift.moveBy(-command.rotate.move_radians);
   	rotate.moveBy(command.rotate.move_radians);
   }
   if (command.pinch.move_radians != 0) {
@@ -98,17 +106,17 @@ void sendMotorData(GripperData gripper, StepperMotor& motor, MotorData* pointer)
   can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
 
   data = MotorData_init_zero;
-  data.current_step = motor.driver.XACTUAL();
+  data.current_step = motor.getPosition();
   *pointer = data;
   can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
 
   data = MotorData_init_zero;
-  data.target_step = motor.driver.XTARGET();
+  data.target_step = motor.getPosition();
   *pointer = data;
   can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
 
   data = MotorData_init_zero;
-  data.angle = motor.angle;
+  data.angle = motor.getPosition();
   *pointer = data;
   can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
 }
@@ -161,5 +169,5 @@ void updateSerialMonitor() {
 	  Serial.println("].");
 	}
 
-	m->debugMoveBySteps(steps); 
+	m->moveBySteps(steps); 
 }

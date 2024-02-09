@@ -7,23 +7,25 @@
 StepperMotorPins liftPins = {
 	chipSelect: 10,
 	enable: 35,
-	limitSwitch: 7,
+	// limitSwitch: 7,
 };
 
 StepperMotorConfig liftConfig = {
 	name: "lift",
 	current: 2000,
+	speed: SPEED * 3,
+	accel: ACCEL,
 	// minLimit: -PI / 2,
 	// maxLimit: 0,
   minLimit: -INFINITY,
   maxLimit: INFINITY,
-	limitSwitchDirection: 1,
-	gearboxRatio: 20,
-	speed: SPEED/10,
-	accel: ACCEL,
+	// limitSwitchDirection: 1,
+	gearboxRatio: 100,
 };
 
-StepperMotor lift(liftPins, liftConfig);
+LimitSwitch liftLimit;
+
+StepperMotor lift(liftPins, liftConfig, liftLimit);
 
 // =============================================
 
@@ -31,20 +33,22 @@ StepperMotor lift(liftPins, liftConfig);
 StepperMotorPins rotatePins = {
 	chipSelect: 37,
 	enable: 34,
-	limitSwitch: -1,
+	// limitSwitch: -1,
 };
 
 StepperMotorConfig rotateConfig = {
 	name: "rotate",
-	current: 500,
+	current: 2000,
+	speed: SPEED * 3,
+	accel: ACCEL,
 	minLimit: -INFINITY,
 	maxLimit: INFINITY,
 	gearboxRatio: 100,
-	speed: SPEED*2,
-	accel: ACCEL,
 };
 
-StepperMotor rotate(rotatePins, rotateConfig);
+LimitSwitch rotateLimit;
+
+StepperMotor rotate(rotatePins, rotateConfig, rotateLimit);
 
 // =============================================
 
@@ -52,20 +56,22 @@ StepperMotor rotate(rotatePins, rotateConfig);
 StepperMotorPins pinchPins = {
 	chipSelect: 36,
 	enable: 40,
-	limitSwitch: -1,  // 9
+	// limitSwitch: -1,  // 9
 };
 
 StepperMotorConfig pinchConfig = {
 	name: "pinch",
-	current: 500,
+	current: 2000,
 	// minLimit: 0,
 	// maxLimit: PI / 4,
-  minLimit: -INFINITY,
-  maxLimit: INFINITY,
-	limitSwitchDirection: 1,
-	gearboxRatio: 100,
 	speed: SPEED,
 	accel: ACCEL,
+  minLimit: -INFINITY,
+  maxLimit: INFINITY,
+	// limitSwitchDirection: 1,
+	gearboxRatio: 100,
 };
 
-StepperMotor pinch(pinchPins, pinchConfig);
+LimitSwitch pinchLimit;
+
+StepperMotor pinch(pinchPins, pinchConfig, pinchLimit);

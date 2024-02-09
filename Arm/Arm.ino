@@ -23,7 +23,7 @@ unsigned long nextSendTime;
 
 void handleCommand(const uint8_t* buffer, int length);
 
-BurtCan can(ARM_COMMAND_ID, handleCommand);
+BurtCan<Can3> can(ARM_COMMAND_ID, Device::Device_ARM, handleCommand);
 BurtSerial serial(handleCommand, Device::Device_ARM);
 
 void setup() {
