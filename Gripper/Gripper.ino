@@ -9,57 +9,23 @@
 #define DATA_SEND_INTERVAL 1000
 #define USE_SERIAL_MONITOR false
 
-unsigned long nextSendTime;
+void handleCommand(const uint8_t* data, int length);
+void sendData();
+void onDisconnect();
 
-void handleCommand(const uint8_t* data, int length) {
-  auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
-  if (command.stop) stopAllMotors();
-  if (command.calibrate) calibrateAllMotors();
-
-  // Debug control: Move by individual steps
-  if (command.lift.move_steps != 0) {
-    lift.moveBySteps(command.lift.move_steps);
-    rotate.moveBySteps(command.lift.move_steps);
-  }
-  if (command.rotate.move_steps != 0) {
-    lift.moveBySteps(-command.rotate.move_steps);
-    rotate.moveBySteps(command.rotate.move_steps);
-  }
-  if (command.pinch.move_steps != 0) pinch.moveBySteps(command.pinch.move_steps);
-
-  // Normal control: Move by radians
-  if (command.lift.move_radians != 0) {
-  	Serial.print("Moving lift by ");
-  	Serial.print(command.lift.move_radians);
-  	Serial.println(" radians");
-  	lift.moveBy(command.lift.move_radians);
-    rotate.moveBy(command.lift.move_radians);
-  }
-  if (command.rotate.move_radians != 0) {
-  	Serial.print("Moving rotate by ");
-  	Serial.print(command.rotate.move_radians);
-  	Serial.println(" radians");
-  	lift.moveBy(-command.rotate.move_radians);
-  	rotate.moveBy(command.rotate.move_radians);
-  }
-  if (command.pinch.move_radians != 0) {
-  	Serial.print("Moving pinch by ");
-  	Serial.print(command.pinch.move_radians);
-  	Serial.println(" radians");
-  	pinch.moveBy(command.pinch.move_radians);
-  }
-}
-
-BurtCan can(GRIPPER_COMMAND_ID, handleCommand);
-BurtSerial serial(handleCommand, Device::Device_GRIPPER);
+BurtCan<Can3> can(GRIPPER_COMMAND_ID, Device::Device_GRIPPER, handleCommand);
+BurtSerial serial(Device::Device_GRIPPER, handleCommand);
+BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
+BurtHeartbeats heartbeats(onDisconnect);
 
 void setup() {
 	Serial.begin(9600);
 	Serial.println("Initializing...");	
 
-  Serial.print("Initializing CAN...");
+  Serial.print("Initializing communications...");
 	can.setup();
-  nextSendTime = millis() + DATA_SEND_INTERVAL;
+  dataTimer.setup();
+  heartbeats.setup();
   Serial.println("Done!");
 
   Serial.print("Preparing motors... ");
@@ -84,7 +50,8 @@ void loop() {
 	can.update();
 	if (USE_SERIAL_MONITOR) updateSerialMonitor();
 	else serial.update();
-  sendData();
+  dataTimer.update();
+  heartbeats.update();
 
 	// Update motors
 	lift.update();
@@ -123,16 +90,12 @@ void sendMotorData(GripperData gripper, StepperMotor& motor, MotorData* pointer)
 
 /* TODO: Send IK data */
 void sendData() {
-  if (millis() < nextSendTime) return;
-
   GripperData gripper = GripperData_init_zero;
   sendMotorData(gripper, lift, &gripper.lift);
   gripper = GripperData_init_zero;
   sendMotorData(gripper, rotate, &gripper.rotate);
   gripper = GripperData_init_zero;
   sendMotorData(gripper, pinch, &gripper.pinch);
-
-  nextSendTime = millis() + DATA_SEND_INTERVAL;
 }
 
 void calibrateAllMotors() {
@@ -146,6 +109,8 @@ void stopAllMotors() {
   rotate.stop();
   pinch.stop();
 }
+
+void onDisconnect() { stopAllMotors(); }
 
 void updateSerialMonitor() {
 	String input = Serial.readString();
@@ -170,4 +135,44 @@ void updateSerialMonitor() {
 	}
 
 	m->moveBySteps(steps); 
+}
+
+void handleCommand(const uint8_t* data, int length) {
+  heartbeats.registerHeartbeat();
+  auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
+  if (command.stop) stopAllMotors();
+  if (command.calibrate) calibrateAllMotors();
+
+  // Debug control: Move by individual steps
+  if (command.lift.move_steps != 0) {
+    lift.moveBySteps(command.lift.move_steps);
+    rotate.moveBySteps(command.lift.move_steps);
+  }
+  if (command.rotate.move_steps != 0) {
+    lift.moveBySteps(-command.rotate.move_steps);
+    rotate.moveBySteps(command.rotate.move_steps);
+  }
+  if (command.pinch.move_steps != 0) pinch.moveBySteps(command.pinch.move_steps);
+
+  // Normal control: Move by radians
+  if (command.lift.move_radians != 0) {
+  	Serial.print("Moving lift by ");
+  	Serial.print(command.lift.move_radians);
+  	Serial.println(" radians");
+  	lift.moveBy(command.lift.move_radians);
+    rotate.moveBy(command.lift.move_radians);
+  }
+  if (command.rotate.move_radians != 0) {
+  	Serial.print("Moving rotate by ");
+  	Serial.print(command.rotate.move_radians);
+  	Serial.println(" radians");
+  	lift.moveBy(-command.rotate.move_radians);
+  	rotate.moveBy(command.rotate.move_radians);
+  }
+  if (command.pinch.move_radians != 0) {
+  	Serial.print("Moving pinch by ");
+  	Serial.print(command.pinch.move_radians);
+  	Serial.println(" radians");
+  	pinch.moveBy(command.pinch.move_radians);
+  }
 }
