@@ -19,21 +19,28 @@
 /// joints of the arm: [swivel], [shoulder], and [elbow]. 
 // Coordinates gripperPosition;
 
-unsigned long nextSendTime;
+void stopAllMotors() {
+  swivel.stop();
+  shoulder.stop();
+  elbow.stop();
+}
 
 void handleCommand(const uint8_t* buffer, int length);
+void sendData();
 
 BurtCan<Can3> can(ARM_COMMAND_ID, Device::Device_ARM, handleCommand);
-BurtSerial serial(handleCommand, Device::Device_ARM);
+BurtSerial serial(Device::Device_ARM, handleCommand);
+BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
+BurtHeartbeats heartbeats(stopAllMotors);
 
 void setup() {
 	Serial.begin(9600);
 	Serial.println("Initializing...");
 
-  Serial.print("Initializing CAN...");
+  Serial.print("Initializing communications...");
 	can.setup();
-  nextSendTime = millis() + DATA_SEND_INTERVAL;
-  Serial.println("Done!");
+  heartbeats.setup();
+  dataTimer.setup();
 
   Serial.print("Preparing motors... ");
 	swivel.presetup();
@@ -52,12 +59,15 @@ void setup() {
 	Serial.println("Arm subsystem ready");  
 }
 
+uint8_t data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+
 void loop() {
   // Update communications
   can.update();
   if (USE_SERIAL_MONITOR) updateSerialMonitor();
   else serial.update();
-  sendData();
+  dataTimer.update();
+  heartbeats.update();
 
   // Update motors
   swivel.update();
@@ -97,16 +107,12 @@ void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
 
 /* TODO: Send IK data */
 void sendData() {
-  if (millis() < nextSendTime) return;
-
   ArmData arm = ArmData_init_zero;
   sendMotorData(arm, swivel, &arm.base);
   arm = ArmData_init_zero;
   sendMotorData(arm, shoulder, &arm.shoulder);
   arm = ArmData_init_zero;
   sendMotorData(arm, elbow, &arm.elbow);
-
-  nextSendTime = millis() + DATA_SEND_INTERVAL;
 }
 
 void calibrateAllMotors() {
@@ -114,12 +120,6 @@ void calibrateAllMotors() {
   shoulder.calibrate();
   elbow.calibrate();
   // gripperPosition = calibratedPosition;
-}
-
-void stopAllMotors() {
-  swivel.stop();
-  shoulder.stop();
-  elbow.stop();
 }
 
 // void setCoordinates(Coordinates destination) { 
@@ -170,6 +170,7 @@ void updateSerialMonitor() {
 }
 
 void handleCommand(const uint8_t* buffer, int length) {
+  heartbeats.registerHeartbeat();
   auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
   Serial.print("Received command: Calibrate=");
   Serial.print(command.calibrate);
