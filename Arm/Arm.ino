@@ -7,7 +7,7 @@
 
 #define ARM_COMMAND_ID 0x23
 #define ARM_DATA_ID 0x15
-#define DATA_SEND_INTERVAL 1000
+#define DATA_SEND_INTERVAL 250
 #define USE_SERIAL_MONITOR false
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
@@ -27,11 +27,11 @@ void stopAllMotors() {
 
 void handleCommand(const uint8_t* buffer, int length);
 void sendData();
+void shutdown();
 
-BurtCan<Can3> can(ARM_COMMAND_ID, Device::Device_ARM, handleCommand);
-BurtSerial serial(Device::Device_ARM, handleCommand);
+BurtCan<Can3> can(ARM_COMMAND_ID, Device::Device_ARM, handleCommand, shutdown);
+BurtSerial serial(Device::Device_ARM, handleCommand, shutdown);
 BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
-BurtHeartbeats heartbeats(stopAllMotors);
 
 void setup() {
 	Serial.begin(9600);
@@ -39,7 +39,6 @@ void setup() {
 
   Serial.print("Initializing communications...");
 	can.setup();
-  heartbeats.setup();
   dataTimer.setup();
 
   Serial.print("Preparing motors... ");
@@ -59,15 +58,11 @@ void setup() {
 	Serial.println("Arm subsystem ready");  
 }
 
-uint8_t data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-
 void loop() {
   // Update communications
   can.update();
-  if (USE_SERIAL_MONITOR) updateSerialMonitor();
-  else serial.update();
+  serial.update();
   dataTimer.update();
-  heartbeats.update();
 
   // Update motors
   swivel.update();
@@ -105,8 +100,15 @@ void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
   can.send(ARM_DATA_ID, &arm, ArmData_fields);
 }
 
+uint8_t version_buffer[6] = {0x32, 0x04, 0x08, 0x01, 0x10, 0x00};
+
 /* TODO: Send IK data */
 void sendData() {
+  if (serial.isConnected) {
+    Serial.write(version_buffer, 6);
+    can.sendRaw(ARM_DATA_ID, version_buffer, 6);
+  }
+
   ArmData arm = ArmData_init_zero;
   sendMotorData(arm, swivel, &arm.base);
   arm = ArmData_init_zero;
@@ -170,12 +172,8 @@ void updateSerialMonitor() {
 }
 
 void handleCommand(const uint8_t* buffer, int length) {
-  heartbeats.registerHeartbeat();
+  // heartbeats.registerHeartbeat();
   auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
-  Serial.print("Received command: Calibrate=");
-  Serial.print(command.calibrate);
-  Serial.print(", swivel=");
-  Serial.println(command.swivel.move_steps);
 
   // General commands
   if (command.stop) stopAllMotors();
@@ -197,4 +195,8 @@ void handleCommand(const uint8_t* buffer, int length) {
   // if (command.ik_y != 0) newPosition.y = command.ik_y;
   // if (command.ik_z != 0) newPosition.z = command.ik_z;
   // setCoordinates(newPosition);
+}
+
+void shutdown() {
+  stopAllMotors();
 }

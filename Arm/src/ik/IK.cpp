@@ -38,7 +38,7 @@ Coordinates ArmIK::calculatePosition(Angles angles) {
 	double x = k * cos(angles.theta);
 
 	// Pack and return the values.
-	Coordinates result = {x: x, y: y, z: z};
+	Coordinates result = {x: (float) x, y: (float) y, z: (float) z};
 	return result; 
 }
 

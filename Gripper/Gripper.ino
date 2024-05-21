@@ -6,17 +6,16 @@
 
 #define GRIPPER_COMMAND_ID 0x33
 #define GRIPPER_DATA_ID 0x16
-#define DATA_SEND_INTERVAL 1000
+#define DATA_SEND_INTERVAL 250
 #define USE_SERIAL_MONITOR false
 
 void handleCommand(const uint8_t* data, int length);
 void sendData();
-void onDisconnect();
+void shutdown();
 
-BurtCan<Can3> can(GRIPPER_COMMAND_ID, Device::Device_GRIPPER, handleCommand);
-BurtSerial serial(Device::Device_GRIPPER, handleCommand);
+BurtCan<Can3> can(GRIPPER_COMMAND_ID, Device::Device_GRIPPER, handleCommand, shutdown);
+BurtSerial serial(Device::Device_GRIPPER, handleCommand, shutdown);
 BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
-BurtHeartbeats heartbeats(onDisconnect);
 
 void setup() {
 	Serial.begin(9600);
@@ -25,7 +24,6 @@ void setup() {
   Serial.print("Initializing communications...");
 	can.setup();
   dataTimer.setup();
-  heartbeats.setup();
   Serial.println("Done!");
 
   Serial.print("Preparing motors... ");
@@ -48,10 +46,8 @@ void setup() {
 void loop() {
 	// Update communications
 	can.update();
-	if (USE_SERIAL_MONITOR) updateSerialMonitor();
-	else serial.update();
+	serial.update();
   dataTimer.update();
-  heartbeats.update();
 
 	// Update motors
 	lift.update();
@@ -88,8 +84,15 @@ void sendMotorData(GripperData gripper, StepperMotor& motor, MotorData* pointer)
   can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
 }
 
+uint8_t version_buffer[6] = {0x22, 0x04, 0x08, 0x01, 0x10, 0x00};
+
 /* TODO: Send IK data */
 void sendData() {
+  if (serial.isConnected) {
+    Serial.write(version_buffer, 6);
+    can.sendRaw(GRIPPER_DATA_ID, version_buffer, 6);
+  }
+
   GripperData gripper = GripperData_init_zero;
   sendMotorData(gripper, lift, &gripper.lift);
   gripper = GripperData_init_zero;
@@ -111,6 +114,8 @@ void stopAllMotors() {
 }
 
 void onDisconnect() { stopAllMotors(); }
+
+void shutdown() { stopAllMotors(); }
 
 void updateSerialMonitor() {
 	String input = Serial.readString();
@@ -138,41 +143,32 @@ void updateSerialMonitor() {
 }
 
 void handleCommand(const uint8_t* data, int length) {
-  heartbeats.registerHeartbeat();
+  // heartbeats.registerHeartbeat();
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
   if (command.stop) stopAllMotors();
   if (command.calibrate) calibrateAllMotors();
 
   // Debug control: Move by individual steps
   if (command.lift.move_steps != 0) {
-    lift.moveBySteps(command.lift.move_steps);
+    lift.moveBySteps(-command.lift.move_steps);
     rotate.moveBySteps(command.lift.move_steps);
   }
   if (command.rotate.move_steps != 0) {
-    lift.moveBySteps(-command.rotate.move_steps);
+    lift.moveBySteps(command.rotate.move_steps);
     rotate.moveBySteps(command.rotate.move_steps);
   }
   if (command.pinch.move_steps != 0) pinch.moveBySteps(command.pinch.move_steps);
 
   // Normal control: Move by radians
   if (command.lift.move_radians != 0) {
-  	Serial.print("Moving lift by ");
-  	Serial.print(command.lift.move_radians);
-  	Serial.println(" radians");
-  	lift.moveBy(command.lift.move_radians);
+  	lift.moveBy(-command.lift.move_radians);
     rotate.moveBy(command.lift.move_radians);
   }
   if (command.rotate.move_radians != 0) {
-  	Serial.print("Moving rotate by ");
-  	Serial.print(command.rotate.move_radians);
-  	Serial.println(" radians");
-  	lift.moveBy(-command.rotate.move_radians);
+  	lift.moveBy(command.rotate.move_radians);
   	rotate.moveBy(command.rotate.move_radians);
   }
   if (command.pinch.move_radians != 0) {
-  	Serial.print("Moving pinch by ");
-  	Serial.print(command.pinch.move_radians);
-  	Serial.println(" radians");
   	pinch.moveBy(command.pinch.move_radians);
   }
 }

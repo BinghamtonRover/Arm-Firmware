@@ -69,7 +69,7 @@ StepperMotorConfig pinchConfig = {
   minLimit: -INFINITY,
   maxLimit: INFINITY,
 	// limitSwitchDirection: 1,
-	gearboxRatio: 100,
+	gearboxRatio: 300,
 };
 
 LimitSwitch pinchLimit;
