@@ -7,7 +7,7 @@
 
 #define ARM_COMMAND_ID 0x23
 #define ARM_DATA_ID 0x15
-#define DATA_SEND_INTERVAL 250
+#define DATA_SEND_INTERVAL 100
 #define USE_SERIAL_MONITOR false
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
@@ -19,6 +19,8 @@
 /// joints of the arm: [swivel], [shoulder], and [elbow]. 
 // Coordinates gripperPosition;
 
+Version version = {major: 1, minor: 1};
+
 void stopAllMotors() {
   swivel.stop();
   shoulder.stop();
@@ -27,15 +29,17 @@ void stopAllMotors() {
 
 void handleCommand(const uint8_t* buffer, int length);
 void sendData();
-void shutdown();
 
-BurtCan<Can3> can(ARM_COMMAND_ID, Device::Device_ARM, handleCommand, shutdown);
-BurtSerial serial(Device::Device_ARM, handleCommand, shutdown);
+BurtCan<Can3> can(ARM_COMMAND_ID, handleCommand);
+BurtSerial serial(Device::Device_ARM, handleCommand, ArmData_fields, ArmData_size);
 BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
 
 void setup() {
 	Serial.begin(9600);
 	Serial.println("Initializing...");
+  // Keep the laser on
+  pinMode(9, OUTPUT);
+  digitalWrite(9, HIGH);
 
   Serial.print("Initializing communications...");
 	can.setup();
@@ -52,8 +56,8 @@ void setup() {
 	shoulder.setup();
 	elbow.setup();
 
-  // Serial.println("Calibrating motors...");
-	// calibrateAllMotors();
+  Serial.println("Calibrating motors...");
+	calibrateAllMotors();
 
 	Serial.println("Arm subsystem ready");  
 }
@@ -71,50 +75,28 @@ void loop() {
 }
 
 // TODO: Validate this sends only 8 bytes
-void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
-  MotorData data;
-
-  data = MotorData_init_zero;
-  data.is_moving = motor.isMoving();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.is_limit_switch_pressed = motor.isLimitSwitchPressed();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.current_step = motor.getPosition();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.target_step = motor.getPosition();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.angle = motor.getPosition();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+MotorData getMotorData(StepperMotor& motor) {
+  return {
+    is_moving: motor.isMoving() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
+    is_limit_switch_pressed: motor.limitSwitch.isPressed() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
+    current_step: motor.currentSteps(),
+    target_step: motor.targetSteps(),
+    angle: (float) motor.currentPosition(),
+  };
 }
-
-uint8_t version_buffer[6] = {0x32, 0x04, 0x08, 0x01, 0x10, 0x00};
 
 /* TODO: Send IK data */
 void sendData() {
-  if (serial.isConnected) {
-    Serial.write(version_buffer, 6);
-    can.sendRaw(ARM_DATA_ID, version_buffer, 6);
-  }
-
-  ArmData arm = ArmData_init_zero;
-  sendMotorData(arm, swivel, &arm.base);
-  arm = ArmData_init_zero;
-  sendMotorData(arm, shoulder, &arm.shoulder);
-  arm = ArmData_init_zero;
-  sendMotorData(arm, elbow, &arm.elbow);
+  ArmData data = ArmData_init_zero;
+  data.version = version;
+  data.has_version = true;
+  data.base = getMotorData(swivel);
+  data.has_base = true;
+  data.shoulder = getMotorData(shoulder);
+  data.has_shoulder = true;
+  data.elbow = getMotorData(elbow);
+  data.has_elbow = true;
+  serial.send(&data);
 }
 
 void calibrateAllMotors() {
@@ -122,53 +104,6 @@ void calibrateAllMotors() {
   shoulder.calibrate();
   elbow.calibrate();
   // gripperPosition = calibratedPosition;
-}
-
-// void setCoordinates(Coordinates destination) { 
-//   Serial.print("Going to ");
-//   printCoordinates(destination);
-
-//   Angles newAngles = ArmIK::calculateAngles(destination);
-//   if (newAngles.isFailure()) return;
-
-//   swivel.moveTo(newAngles.theta);
-//   shoulder.moveTo(newAngles.B);
-//   elbow.moveTo(newAngles.C);
-//   gripperPosition = destination;
-// }
-
-// void jab() {
-//   // TODO: Move the arm forward 
-// }
-
-void updateSerialMonitor() {
-	if (!Serial.available()) return;
-
-  String input = Serial.readString();
-	int delimiter = input.indexOf(" ");
-	if (delimiter == -1) return;
-	// int delimiter2 = input.indexOf(" ", delimiter + 1);
-	// if (delimiter2 != -1) {  // was given an x, y, z command
-	// 	float x = input.substring(0, delimiter).toFloat();
-	// 	float y = input.substring(delimiter + 1, delimiter2).toFloat();
-	// 	float z = input.substring(delimiter2).toFloat();
-	// 	setCoordinates({x: x, y: y, z: z});
-	// 	return;
-	// }
-	String command = input.substring(0, delimiter);
-	float arg = input.substring(delimiter + 1).toFloat();
-
-	if (command == "swivel") {
-    Serial.println("Doing something");
-    swivel.moveTo(arg);
-	} else if (command == "shoulder") {
-    shoulder.moveTo(arg);
-	} else if (command == "elbow") {
-    elbow.moveTo(arg);
-	} else if (command == "precise-swivel") swivel.moveBySteps(arg);
-	else if (command == "precise-elbow") elbow.moveBySteps(arg);
-	else if (command == "precise-shoulder") shoulder.moveBySteps(arg);
-  else Serial.println("Unrecognized command");
 }
 
 void handleCommand(const uint8_t* buffer, int length) {
@@ -195,8 +130,4 @@ void handleCommand(const uint8_t* buffer, int length) {
   // if (command.ik_y != 0) newPosition.y = command.ik_y;
   // if (command.ik_z != 0) newPosition.z = command.ik_z;
   // setCoordinates(newPosition);
-}
-
-void shutdown() {
-  stopAllMotors();
 }

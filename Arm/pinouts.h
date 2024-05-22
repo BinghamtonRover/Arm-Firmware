@@ -4,74 +4,65 @@
 #define ACCEL 0x00030d4d
 
 StepperMotorPins swivelPins = {
-	chipSelect: 10,
 	enable: 35,
+	chipSelect: 10,
 };
 
 StepperMotorConfig swivelConfig = {
 	name: "swivel",
 	current: 2000,
-	speed: SPEED,
-	accel: ACCEL,
-	minLimit: -INFINITY,  // 0,
-	maxLimit: INFINITY,  // 2*PI,
-	isPositive: true,
-	gearboxRatio: 47,
+	speed: 200'000,
+	acceleration: 200'000,
+	stepsPerUnit: microstepsPerRadian * 47,
 };
 
-LimitSwitch swivelLimit;
-
-StepperMotor swivel(swivelPins, swivelConfig, swivelLimit);
+StepperMotor swivel(swivelPins, swivelConfig);
 
 // =============================================
 
 StepperMotorPins shoulderPins = {
-	chipSelect: 37,
 	enable: 34,
+	chipSelect: 37,
 };
 
 StepperMotorConfig shoulderConfig = {
 	name: "shoulder",
 	current: 2000,
-	speed: SPEED,
-	accel: ACCEL,
-	minLimit: -INFINITY, // 0,
-	maxLimit: INFINITY,  // 1.71042,
-	isPositive: false,
-	gearboxRatio: 400,
+	speed: 200'000,
+	acceleration: 200'000,
+	stepsPerUnit: microstepsPerRadian * 400 * -1,
 };
 
 LimitSwitch shoulderLimit = {
 	pin: -1,  // 8
 	triggeredValue: HIGH,
 	direction: -1,
-	position: 0,
+	position: PI / 2,
 };
 
+// TODO: re-enable limit switch
 StepperMotor shoulder(shoulderPins, shoulderConfig, shoulderLimit);
 
 // =============================================
 
 StepperMotorPins elbowPins = {
-	chipSelect: 36,
 	enable: 40,
+	chipSelect: 36,
 };
 
 StepperMotorConfig elbowConfig = {
 	name: "elbow",
 	current: 2000,
-	speed: SPEED,
-	accel: ACCEL,
-	minLimit: -INFINITY, // PI / 4,
-	maxLimit: INFINITY,  // PI,
-	isPositive: true,
-	gearboxRatio: 400,
+	speed: 200'000,
+	acceleration: 200'000,
+	stepsPerUnit: microstepsPerRadian * 400 * -1,
 };
 
 LimitSwitch elbowLimit = {
 	pin: -1,  // 9
 	direction: -1,
-	position: PI / 4,
+	position: PI / 2,
 };
 
+// TODO: re-enable limit switch
 StepperMotor elbow(elbowPins, elbowConfig, elbowLimit);

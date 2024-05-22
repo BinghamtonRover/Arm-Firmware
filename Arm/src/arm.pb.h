@@ -5,6 +5,7 @@
 #define PB_ARM_PB_H_INCLUDED
 #include "utils/pb.h"
 #include "version.pb.h"
+#include "utils.pb.h"
 
 #if PB_PROTO_HEADER_VERSION != 40
 #error Regenerate this file with the current version of nanopb generator.
@@ -32,8 +33,8 @@ typedef struct _Coordinates {
 } Coordinates;
 
 typedef struct _MotorData {
-    bool is_moving;
-    bool is_limit_switch_pressed;
+    BoolState is_moving;
+    BoolState is_limit_switch_pressed;
     MotorDirection direction;
     int32_t current_step;
     int32_t target_step;
@@ -95,6 +96,8 @@ typedef struct _GripperData {
     MotorData pinch;
     bool has_version;
     Version version;
+    int32_t servoAngle;
+    BoolState laserState;
 } GripperData;
 
 typedef struct _GripperCommand {
@@ -114,6 +117,8 @@ typedef struct _GripperCommand {
     bool spin;
     bool has_version;
     Version version;
+    int32_t servoAngle;
+    BoolState laserState;
 } GripperCommand;
 
 
@@ -127,29 +132,33 @@ extern "C" {
 #define _MotorDirection_ARRAYSIZE ((MotorDirection)(MotorDirection_NOT_MOVING+1))
 
 
+#define MotorData_is_moving_ENUMTYPE BoolState
+#define MotorData_is_limit_switch_pressed_ENUMTYPE BoolState
 #define MotorData_direction_ENUMTYPE MotorDirection
 
 
 
 
+#define GripperData_laserState_ENUMTYPE BoolState
 
+#define GripperCommand_laserState_ENUMTYPE BoolState
 
 
 /* Initializer values for message structs */
 #define Coordinates_init_default                 {0, 0, 0}
-#define MotorData_init_default                   {0, 0, _MotorDirection_MIN, 0, 0, 0}
+#define MotorData_init_default                   {_BoolState_MIN, _BoolState_MIN, _MotorDirection_MIN, 0, 0, 0}
 #define MotorCommand_init_default                {0, 0}
 #define ArmData_init_default                     {false, Coordinates_init_default, false, Coordinates_init_default, false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default, false, Version_init_default}
 #define ArmCommand_init_default                  {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0, 0, false, Version_init_default}
-#define GripperData_init_default                 {false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default, false, Version_init_default}
-#define GripperCommand_init_default              {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0, false, Version_init_default}
+#define GripperData_init_default                 {false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default, false, Version_init_default, 0, _BoolState_MIN}
+#define GripperCommand_init_default              {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0, false, Version_init_default, 0, _BoolState_MIN}
 #define Coordinates_init_zero                    {0, 0, 0}
-#define MotorData_init_zero                      {0, 0, _MotorDirection_MIN, 0, 0, 0}
+#define MotorData_init_zero                      {_BoolState_MIN, _BoolState_MIN, _MotorDirection_MIN, 0, 0, 0}
 #define MotorCommand_init_zero                   {0, 0}
 #define ArmData_init_zero                        {false, Coordinates_init_zero, false, Coordinates_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, Version_init_zero}
 #define ArmCommand_init_zero                     {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, 0, 0, 0, 0, false, Version_init_zero}
-#define GripperData_init_zero                    {false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, Version_init_zero}
-#define GripperCommand_init_zero                 {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, 0, 0, 0, false, Version_init_zero}
+#define GripperData_init_zero                    {false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, Version_init_zero, 0, _BoolState_MIN}
+#define GripperCommand_init_zero                 {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, 0, 0, 0, false, Version_init_zero, 0, _BoolState_MIN}
 
 /* Field tags (for use in manual encoding/decoding) */
 #define Coordinates_x_tag                        1
@@ -184,6 +193,8 @@ extern "C" {
 #define GripperData_rotate_tag                   2
 #define GripperData_pinch_tag                    3
 #define GripperData_version_tag                  4
+#define GripperData_servoAngle_tag               5
+#define GripperData_laserState_tag               6
 #define GripperCommand_stop_tag                  1
 #define GripperCommand_calibrate_tag             2
 #define GripperCommand_lift_tag                  3
@@ -193,6 +204,8 @@ extern "C" {
 #define GripperCommand_close_tag                 7
 #define GripperCommand_spin_tag                  8
 #define GripperCommand_version_tag               9
+#define GripperCommand_servoAngle_tag            10
+#define GripperCommand_laserState_tag            11
 
 /* Struct field encoding specification for nanopb */
 #define Coordinates_FIELDLIST(X, a) \
@@ -203,8 +216,8 @@ X(a, STATIC,   SINGULAR, FLOAT,    z,                 3)
 #define Coordinates_DEFAULT NULL
 
 #define MotorData_FIELDLIST(X, a) \
-X(a, STATIC,   SINGULAR, BOOL,     is_moving,         1) \
-X(a, STATIC,   SINGULAR, BOOL,     is_limit_switch_pressed,   2) \
+X(a, STATIC,   SINGULAR, UENUM,    is_moving,         1) \
+X(a, STATIC,   SINGULAR, UENUM,    is_limit_switch_pressed,   2) \
 X(a, STATIC,   SINGULAR, UENUM,    direction,         3) \
 X(a, STATIC,   SINGULAR, INT32,    current_step,      4) \
 X(a, STATIC,   SINGULAR, INT32,    target_step,       5) \
@@ -258,7 +271,9 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  version,          11)
 X(a, STATIC,   OPTIONAL, MESSAGE,  lift,              1) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  rotate,            2) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  pinch,             3) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  version,           4)
+X(a, STATIC,   OPTIONAL, MESSAGE,  version,           4) \
+X(a, STATIC,   SINGULAR, INT32,    servoAngle,        5) \
+X(a, STATIC,   SINGULAR, UENUM,    laserState,        6)
 #define GripperData_CALLBACK NULL
 #define GripperData_DEFAULT NULL
 #define GripperData_lift_MSGTYPE MotorData
@@ -275,7 +290,9 @@ X(a, STATIC,   OPTIONAL, MESSAGE,  pinch,             5) \
 X(a, STATIC,   SINGULAR, BOOL,     open,              6) \
 X(a, STATIC,   SINGULAR, BOOL,     close,             7) \
 X(a, STATIC,   SINGULAR, BOOL,     spin,              8) \
-X(a, STATIC,   OPTIONAL, MESSAGE,  version,           9)
+X(a, STATIC,   OPTIONAL, MESSAGE,  version,           9) \
+X(a, STATIC,   SINGULAR, INT32,    servoAngle,       10) \
+X(a, STATIC,   SINGULAR, UENUM,    laserState,       11)
 #define GripperCommand_CALLBACK NULL
 #define GripperCommand_DEFAULT NULL
 #define GripperCommand_lift_MSGTYPE MotorCommand
@@ -305,8 +322,8 @@ extern const pb_msgdesc_t GripperCommand_msg;
 #define ArmCommand_size                          117
 #define ArmData_size                             163
 #define Coordinates_size                         15
-#define GripperCommand_size                      88
-#define GripperData_size                         129
+#define GripperCommand_size                      101
+#define GripperData_size                         142
 #define MotorCommand_size                        16
 #define MotorData_size                           33
 
