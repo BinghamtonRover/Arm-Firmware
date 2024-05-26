@@ -8,7 +8,6 @@
 #define ARM_COMMAND_ID 0x23
 #define ARM_DATA_ID 0x15
 #define DATA_SEND_INTERVAL 100
-#define USE_SERIAL_MONITOR false
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
 // Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
@@ -74,7 +73,6 @@ void loop() {
   elbow.update();
 }
 
-// TODO: Validate this sends only 8 bytes
 MotorData getMotorData(StepperMotor& motor) {
   return {
     is_moving: motor.isMoving() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
@@ -123,6 +121,11 @@ void handleCommand(const uint8_t* buffer, int length) {
   if (command.swivel.move_radians != 0) swivel.moveBy(command.swivel.move_radians);
   if (command.shoulder.move_radians != 0) shoulder.moveBy(command.shoulder.move_radians);
   if (command.elbow.move_radians != 0) elbow.moveBy(command.elbow.move_radians);
+
+  // IK control: Move to radians: 
+  if (command.swivel.angle != 0) swivel.moveTo(command.swivel.angle);
+  if (command.shoulder.angle != 0) shoulder.moveTo(command.shoulder.angle);
+  if (command.elbow.angle != 0) elbow.moveTo(command.elbow.angle);
 
   // IK control to move motors by coordinates
   // Coordinates newPosition = {gripperPosition.x, gripperPosition.y, gripperPosition.z}

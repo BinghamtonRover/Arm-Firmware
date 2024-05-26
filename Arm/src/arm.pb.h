@@ -46,6 +46,8 @@ typedef struct _MotorCommand {
     int32_t move_steps;
     /* Precise control: Move by radians */
     float move_radians;
+    /* / An angle to go to. Useful in IK. */
+    float angle;
 } MotorCommand;
 
 typedef struct _ArmData {
@@ -78,6 +80,7 @@ typedef struct _ArmCommand {
  stationary. See /Arm/src/ik/README.md in the Arm-Firmware repository. */
     bool has_gripper_lift;
     MotorCommand gripper_lift;
+    /* Can be removed in future versions */
     float ik_x;
     float ik_y;
     float ik_z;
@@ -147,14 +150,14 @@ extern "C" {
 /* Initializer values for message structs */
 #define Coordinates_init_default                 {0, 0, 0}
 #define MotorData_init_default                   {_BoolState_MIN, _BoolState_MIN, _MotorDirection_MIN, 0, 0, 0}
-#define MotorCommand_init_default                {0, 0}
+#define MotorCommand_init_default                {0, 0, 0}
 #define ArmData_init_default                     {false, Coordinates_init_default, false, Coordinates_init_default, false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default, false, Version_init_default}
 #define ArmCommand_init_default                  {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0, 0, false, Version_init_default}
 #define GripperData_init_default                 {false, MotorData_init_default, false, MotorData_init_default, false, MotorData_init_default, false, Version_init_default, 0, _BoolState_MIN}
 #define GripperCommand_init_default              {0, 0, false, MotorCommand_init_default, false, MotorCommand_init_default, false, MotorCommand_init_default, 0, 0, 0, false, Version_init_default, 0, _BoolState_MIN}
 #define Coordinates_init_zero                    {0, 0, 0}
 #define MotorData_init_zero                      {_BoolState_MIN, _BoolState_MIN, _MotorDirection_MIN, 0, 0, 0}
-#define MotorCommand_init_zero                   {0, 0}
+#define MotorCommand_init_zero                   {0, 0, 0}
 #define ArmData_init_zero                        {false, Coordinates_init_zero, false, Coordinates_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, Version_init_zero}
 #define ArmCommand_init_zero                     {0, 0, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, false, MotorCommand_init_zero, 0, 0, 0, 0, false, Version_init_zero}
 #define GripperData_init_zero                    {false, MotorData_init_zero, false, MotorData_init_zero, false, MotorData_init_zero, false, Version_init_zero, 0, _BoolState_MIN}
@@ -172,6 +175,7 @@ extern "C" {
 #define MotorData_angle_tag                      6
 #define MotorCommand_move_steps_tag              1
 #define MotorCommand_move_radians_tag            2
+#define MotorCommand_angle_tag                   3
 #define ArmData_currentPosition_tag              1
 #define ArmData_targetPosition_tag               2
 #define ArmData_base_tag                         3
@@ -227,7 +231,8 @@ X(a, STATIC,   SINGULAR, FLOAT,    angle,             6)
 
 #define MotorCommand_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, INT32,    move_steps,        1) \
-X(a, STATIC,   SINGULAR, FLOAT,    move_radians,      2)
+X(a, STATIC,   SINGULAR, FLOAT,    move_radians,      2) \
+X(a, STATIC,   SINGULAR, FLOAT,    angle,             3)
 #define MotorCommand_CALLBACK NULL
 #define MotorCommand_DEFAULT NULL
 
@@ -319,12 +324,12 @@ extern const pb_msgdesc_t GripperCommand_msg;
 
 /* Maximum encoded size of messages (where known) */
 #define ARM_PB_H_MAX_SIZE                        ArmData_size
-#define ArmCommand_size                          117
+#define ArmCommand_size                          137
 #define ArmData_size                             163
 #define Coordinates_size                         15
-#define GripperCommand_size                      101
+#define GripperCommand_size                      116
 #define GripperData_size                         142
-#define MotorCommand_size                        16
+#define MotorCommand_size                        21
 #define MotorData_size                           33
 
 #ifdef __cplusplus
