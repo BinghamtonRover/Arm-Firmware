@@ -7,8 +7,7 @@
 
 #define ARM_COMMAND_ID 0x23
 #define ARM_DATA_ID 0x15
-#define DATA_SEND_INTERVAL 1000
-#define USE_SERIAL_MONITOR false
+#define DATA_SEND_INTERVAL 100
 
 /// When the joints are at their minimum angles (limit switches), these are the coordinates of the gripper.
 // Coordinates calibratedPosition = {x: 0, y: 366.420, z: 1117.336};
@@ -19,6 +18,8 @@
 /// joints of the arm: [swivel], [shoulder], and [elbow]. 
 // Coordinates gripperPosition;
 
+Version version = {major: 1, minor: 1};
+
 void stopAllMotors() {
   swivel.stop();
   shoulder.stop();
@@ -28,18 +29,19 @@ void stopAllMotors() {
 void handleCommand(const uint8_t* buffer, int length);
 void sendData();
 
-BurtCan<Can3> can(ARM_COMMAND_ID, Device::Device_ARM, handleCommand);
-BurtSerial serial(Device::Device_ARM, handleCommand);
+BurtCan<Can3> can(ARM_COMMAND_ID, handleCommand);
+BurtSerial serial(Device::Device_ARM, handleCommand, ArmData_fields, ArmData_size);
 BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
-BurtHeartbeats heartbeats(stopAllMotors);
 
 void setup() {
 	Serial.begin(9600);
 	Serial.println("Initializing...");
+  // Keep the laser on
+  pinMode(9, OUTPUT);
+  digitalWrite(9, HIGH);
 
   Serial.print("Initializing communications...");
 	can.setup();
-  heartbeats.setup();
   dataTimer.setup();
 
   Serial.print("Preparing motors... ");
@@ -53,21 +55,17 @@ void setup() {
 	shoulder.setup();
 	elbow.setup();
 
-  // Serial.println("Calibrating motors...");
-	// calibrateAllMotors();
+  Serial.println("Calibrating motors...");
+	calibrateAllMotors();
 
 	Serial.println("Arm subsystem ready");  
 }
 
-uint8_t data[8] = {0, 1, 2, 3, 4, 5, 6, 7};
-
 void loop() {
   // Update communications
   can.update();
-  if (USE_SERIAL_MONITOR) updateSerialMonitor();
-  else serial.update();
+  serial.update();
   dataTimer.update();
-  heartbeats.update();
 
   // Update motors
   swivel.update();
@@ -75,44 +73,28 @@ void loop() {
   elbow.update();
 }
 
-// TODO: Validate this sends only 8 bytes
-void sendMotorData(ArmData arm, StepperMotor& motor, MotorData* pointer) {
-  MotorData data;
-
-  data = MotorData_init_zero;
-  data.is_moving = motor.isMoving();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.is_limit_switch_pressed = motor.isLimitSwitchPressed();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.current_step = motor.getPosition();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.target_step = motor.getPosition();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
-
-  data = MotorData_init_zero;
-  data.angle = motor.getPosition();
-  *pointer = data;
-  can.send(ARM_DATA_ID, &arm, ArmData_fields);
+MotorData getMotorData(StepperMotor& motor) {
+  return {
+    is_moving: motor.isMoving() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
+    is_limit_switch_pressed: motor.limitSwitch.isPressed() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
+    current_step: motor.currentSteps(),
+    target_step: motor.targetSteps(),
+    angle: (float) motor.currentPosition(),
+  };
 }
 
 /* TODO: Send IK data */
 void sendData() {
-  ArmData arm = ArmData_init_zero;
-  sendMotorData(arm, swivel, &arm.base);
-  arm = ArmData_init_zero;
-  sendMotorData(arm, shoulder, &arm.shoulder);
-  arm = ArmData_init_zero;
-  sendMotorData(arm, elbow, &arm.elbow);
+  ArmData data = ArmData_init_zero;
+  data.version = version;
+  data.has_version = true;
+  data.base = getMotorData(swivel);
+  data.has_base = true;
+  data.shoulder = getMotorData(shoulder);
+  data.has_shoulder = true;
+  data.elbow = getMotorData(elbow);
+  data.has_elbow = true;
+  serial.send(&data);
 }
 
 void calibrateAllMotors() {
@@ -122,60 +104,9 @@ void calibrateAllMotors() {
   // gripperPosition = calibratedPosition;
 }
 
-// void setCoordinates(Coordinates destination) { 
-//   Serial.print("Going to ");
-//   printCoordinates(destination);
-
-//   Angles newAngles = ArmIK::calculateAngles(destination);
-//   if (newAngles.isFailure()) return;
-
-//   swivel.moveTo(newAngles.theta);
-//   shoulder.moveTo(newAngles.B);
-//   elbow.moveTo(newAngles.C);
-//   gripperPosition = destination;
-// }
-
-// void jab() {
-//   // TODO: Move the arm forward 
-// }
-
-void updateSerialMonitor() {
-	if (!Serial.available()) return;
-
-  String input = Serial.readString();
-	int delimiter = input.indexOf(" ");
-	if (delimiter == -1) return;
-	// int delimiter2 = input.indexOf(" ", delimiter + 1);
-	// if (delimiter2 != -1) {  // was given an x, y, z command
-	// 	float x = input.substring(0, delimiter).toFloat();
-	// 	float y = input.substring(delimiter + 1, delimiter2).toFloat();
-	// 	float z = input.substring(delimiter2).toFloat();
-	// 	setCoordinates({x: x, y: y, z: z});
-	// 	return;
-	// }
-	String command = input.substring(0, delimiter);
-	float arg = input.substring(delimiter + 1).toFloat();
-
-	if (command == "swivel") {
-    Serial.println("Doing something");
-    swivel.moveTo(arg);
-	} else if (command == "shoulder") {
-    shoulder.moveTo(arg);
-	} else if (command == "elbow") {
-    elbow.moveTo(arg);
-	} else if (command == "precise-swivel") swivel.moveBySteps(arg);
-	else if (command == "precise-elbow") elbow.moveBySteps(arg);
-	else if (command == "precise-shoulder") shoulder.moveBySteps(arg);
-  else Serial.println("Unrecognized command");
-}
-
 void handleCommand(const uint8_t* buffer, int length) {
-  heartbeats.registerHeartbeat();
+  // heartbeats.registerHeartbeat();
   auto command = BurtProto::decode<ArmCommand>(buffer, length, ArmCommand_fields);
-  Serial.print("Received command: Calibrate=");
-  Serial.print(command.calibrate);
-  Serial.print(", swivel=");
-  Serial.println(command.swivel.move_steps);
 
   // General commands
   if (command.stop) stopAllMotors();
@@ -190,6 +121,11 @@ void handleCommand(const uint8_t* buffer, int length) {
   if (command.swivel.move_radians != 0) swivel.moveBy(command.swivel.move_radians);
   if (command.shoulder.move_radians != 0) shoulder.moveBy(command.shoulder.move_radians);
   if (command.elbow.move_radians != 0) elbow.moveBy(command.elbow.move_radians);
+
+  // IK control: Move to radians: 
+  if (command.swivel.angle != 0) swivel.moveTo(command.swivel.angle);
+  if (command.shoulder.angle != 0) shoulder.moveTo(command.shoulder.angle);
+  if (command.elbow.angle != 0) elbow.moveTo(command.elbow.angle);
 
   // IK control to move motors by coordinates
   // Coordinates newPosition = {gripperPosition.x, gripperPosition.y, gripperPosition.z}

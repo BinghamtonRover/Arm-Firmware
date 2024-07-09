@@ -9,7 +9,7 @@
 
 #include <Arduino.h>  // <-- includes math.h
 #include "constants.h"
-#include "../coordinates.pb.h"
+#include "../arm.pb.h"
 
 /// Defines the angles of the arm. 
 /// 

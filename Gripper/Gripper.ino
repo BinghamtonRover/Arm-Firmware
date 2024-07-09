@@ -1,22 +1,28 @@
+#include <Servo.h>
 #include "src/utils/BURT_utils.h"
 #include "src/tmc/BURT_TMC.h"
 
 #include "src/arm.pb.h"
+#include "src/laser/laser.h"
 #include "pinouts.h"
 
 #define GRIPPER_COMMAND_ID 0x33
 #define GRIPPER_DATA_ID 0x16
-#define DATA_SEND_INTERVAL 1000
-#define USE_SERIAL_MONITOR false
+#define DATA_SEND_INTERVAL 100
 
 void handleCommand(const uint8_t* data, int length);
 void sendData();
-void onDisconnect();
 
-BurtCan<Can3> can(GRIPPER_COMMAND_ID, Device::Device_GRIPPER, handleCommand);
-BurtSerial serial(Device::Device_GRIPPER, handleCommand);
+const Version version = {major: 1, minor: 1};
+Laser laser(9);
+Servo camera;
+int cameraAngle = 90;
+float liftAngle = 0;
+float rotateAngle = 0;
+
+BurtCan<Can3> can(GRIPPER_COMMAND_ID, handleCommand);
+BurtSerial serial(Device::Device_GRIPPER, handleCommand, GripperData_fields, GripperData_size);
 BurtTimer dataTimer(DATA_SEND_INTERVAL, sendData);
-BurtHeartbeats heartbeats(onDisconnect);
 
 void setup() {
 	Serial.begin(9600);
@@ -25,7 +31,8 @@ void setup() {
   Serial.print("Initializing communications...");
 	can.setup();
   dataTimer.setup();
-  heartbeats.setup();
+  laser.setup();
+  camera.attach(18);
   Serial.println("Done!");
 
   Serial.print("Preparing motors... ");
@@ -39,8 +46,8 @@ void setup() {
 	rotate.setup();
 	pinch.setup();
 
-  // Serial.println("Calibrating motors...");
-	// calibrateAllMotors();
+  Serial.println("Calibrating motors...");
+	calibrateAllMotors();
 
 	Serial.println("Gripper subsystem ready");
 }
@@ -48,10 +55,8 @@ void setup() {
 void loop() {
 	// Update communications
 	can.update();
-	if (USE_SERIAL_MONITOR) updateSerialMonitor();
-	else serial.update();
+	serial.update();
   dataTimer.update();
-  heartbeats.update();
 
 	// Update motors
 	lift.update();
@@ -59,49 +64,40 @@ void loop() {
 	pinch.update();
 }
 
-void sendMotorData(GripperData gripper, StepperMotor& motor, MotorData* pointer) {
-  MotorData data;
-
-  data = MotorData_init_zero;
-  data.is_moving = motor.isMoving();
-  *pointer = data;
-  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
-
-  data = MotorData_init_zero;
-  data.is_limit_switch_pressed = motor.isLimitSwitchPressed();
-  *pointer = data;
-  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
-
-  data = MotorData_init_zero;
-  data.current_step = motor.getPosition();
-  *pointer = data;
-  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
-
-  data = MotorData_init_zero;
-  data.target_step = motor.getPosition();
-  *pointer = data;
-  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
-
-  data = MotorData_init_zero;
-  data.angle = motor.getPosition();
-  *pointer = data;
-  can.send(GRIPPER_DATA_ID, &gripper, GripperData_fields);
+MotorData getMotorData(StepperMotor& motor) {
+  return {
+    is_moving: motor.isMoving() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
+    is_limit_switch_pressed: motor.limitSwitch.isPressed() ? BoolState::BoolState_YES : BoolState::BoolState_NO,
+    current_step: motor.currentSteps(),
+    target_step: motor.targetSteps(),
+    angle: (float) motor.currentPosition(),
+  };
 }
 
 /* TODO: Send IK data */
 void sendData() {
-  GripperData gripper = GripperData_init_zero;
-  sendMotorData(gripper, lift, &gripper.lift);
-  gripper = GripperData_init_zero;
-  sendMotorData(gripper, rotate, &gripper.rotate);
-  gripper = GripperData_init_zero;
-  sendMotorData(gripper, pinch, &gripper.pinch);
+  GripperData data = GripperData_init_zero;
+  data.version = version;
+  data.has_version = true;
+  data.lift = getMotorData(lift);
+  data.lift.angle = liftAngle;  // override raw motor data
+  data.has_lift = true;
+  data.rotate = getMotorData(rotate);
+  data.rotate.angle = rotateAngle;  // override raw motor data
+  data.has_rotate = true;
+  data.pinch = getMotorData(pinch);
+  data.has_pinch = true;
+  data.laserState = laser.isOn ? BoolState::BoolState_ON : BoolState::BoolState_OFF;
+  data.servoAngle = cameraAngle;
+  serial.send(&data);
 }
 
 void calibrateAllMotors() {
 	lift.calibrate();
 	rotate.calibrate();
 	pinch.calibrate();
+  liftAngle = 0;
+  rotateAngle = 0;
 }
 
 void stopAllMotors() {
@@ -110,69 +106,57 @@ void stopAllMotors() {
   pinch.stop();
 }
 
-void onDisconnect() { stopAllMotors(); }
-
-void updateSerialMonitor() {
-	String input = Serial.readString();
-	if (input == "") return;
-
-	// Parse the command
-	int delimiter = input.indexOf(" ");
-	if (delimiter == -1) return;
-	String part1 = input.substring(0, delimiter);
-	String part2 = input.substring(delimiter + 1);
-	String motor = part1;
-	int steps = part2.toInt();
-
-	StepperMotor* m = &lift;
-	if (motor == "lift") m = &lift;
-	else if (motor == "rotate") m = &rotate;
-	else if (motor == "pinch") m = &pinch;
-	else {
-	  Serial.print("Cannot move motor: [");
-	  Serial.print(motor);
-	  Serial.println("].");
-	}
-
-	m->moveBySteps(steps); 
-}
-
 void handleCommand(const uint8_t* data, int length) {
-  heartbeats.registerHeartbeat();
+  // heartbeats.registerHeartbeat();
   auto command = BurtProto::decode<GripperCommand>(data, length, GripperCommand_fields);
   if (command.stop) stopAllMotors();
   if (command.calibrate) calibrateAllMotors();
 
   // Debug control: Move by individual steps
   if (command.lift.move_steps != 0) {
-    lift.moveBySteps(command.lift.move_steps);
+    lift.moveBySteps(-command.lift.move_steps);
     rotate.moveBySteps(command.lift.move_steps);
   }
   if (command.rotate.move_steps != 0) {
-    lift.moveBySteps(-command.rotate.move_steps);
+    lift.moveBySteps(command.rotate.move_steps);
     rotate.moveBySteps(command.rotate.move_steps);
   }
   if (command.pinch.move_steps != 0) pinch.moveBySteps(command.pinch.move_steps);
 
   // Normal control: Move by radians
   if (command.lift.move_radians != 0) {
-  	Serial.print("Moving lift by ");
-  	Serial.print(command.lift.move_radians);
-  	Serial.println(" radians");
-  	lift.moveBy(command.lift.move_radians);
+  	lift.moveBy(-command.lift.move_radians);
     rotate.moveBy(command.lift.move_radians);
+    liftAngle += command.lift.move_radians / 120;
   }
   if (command.rotate.move_radians != 0) {
-  	Serial.print("Moving rotate by ");
-  	Serial.print(command.rotate.move_radians);
-  	Serial.println(" radians");
-  	lift.moveBy(-command.rotate.move_radians);
+  	lift.moveBy(command.rotate.move_radians);
   	rotate.moveBy(command.rotate.move_radians);
+    rotateAngle += command.rotate.move_radians / 150;
   }
   if (command.pinch.move_radians != 0) {
-  	Serial.print("Moving pinch by ");
-  	Serial.print(command.pinch.move_radians);
-  	Serial.println(" radians");
   	pinch.moveBy(command.pinch.move_radians);
   }
+
+  // IK control: Move to radians
+  if (command.lift.angle != 0) {
+    lift.moveTo(-command.lift.angle);
+    rotate.moveTo(command.lift.angle);
+    liftAngle = command.lift.angle;
+  }
+  if (command.rotate.angle != 0) {
+    lift.moveTo(command.rotate.angle);
+    rotate.moveTo(command.rotate.angle);
+    rotateAngle = command.rotate.angle;
+  }
+  if (command.pinch.angle != 0) {
+    pinch.moveTo(command.rotate.angle);
+  }
+
+  if (command.spin) {
+    lift.moveBy(2 * PI);
+    rotate.moveBy(2 * PI);
+  }
+  if (command.servoAngle != 0) camera.write(command.servoAngle);
+  laser.handleCommand(command);
 }
